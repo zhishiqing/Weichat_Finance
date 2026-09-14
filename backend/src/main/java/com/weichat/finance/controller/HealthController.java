@@ -1,7 +1,6 @@
 package com.weichat.finance.controller;
 
 import com.weichat.finance.common.R;
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,19 +12,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 健康检查 Controller
+ * 健康检查 Controller。
  *
- * <p>Phase 1 验收入口：访问 GET /api/health 看 Spring Boot + MySQL + Flyway 是否都正常。</p>
+ * <p>访问 GET /api/health 看 Spring Boot + MySQL + Flyway 是否都正常。</p>
  *
  * @author panhw
  * @since 2026-09-14
  */
 @RestController
 @RequestMapping("/health")
-@RequiredArgsConstructor
 public class HealthController {
 
     private final DataSource dataSource;
+
+    public HealthController(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
     @GetMapping
     public R<Map<String, Object>> health() throws Exception {

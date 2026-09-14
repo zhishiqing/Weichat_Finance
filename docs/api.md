@@ -7,11 +7,13 @@
 
 ## 一、接口分类
 
-| 类型 | 说明 |
-|---|---|
-| **对外业务接口** | 业务系统 → 本服务（创建订单、查询、退款） |
+
+| 类型         | 说明                        |
+| ---------- | ------------------------- |
+| **对外业务接口** | 业务系统 → 本服务（创建订单、查询、退款）    |
 | **微信回调接口** | 微信支付 → 本服务（支付成功通知、退款结果通知） |
-| **内部调用** | 本服务 → 微信支付（无需在本服务封装） |
+| **内部调用**   | 本服务 → 微信支付（无需在本服务封装）      |
+
 
 ---
 
@@ -19,14 +21,17 @@
 
 ### 2.1 健康检查
 
-| 项 | 值 |
-|---|---|
-| 方法 | `GET` |
-| 路径 | `/api/health` |
-| 鉴权 | 无 |
-| 用途 | 探活 + DB 连通性验证 |
+
+| 项   | 值             |
+| --- | ------------- |
+| 方法  | `GET`         |
+| 路径  | `/api/health` |
+| 鉴权  | 无             |
+| 用途  | 探活 + DB 连通性验证 |
+
 
 **响应示例**：
+
 ```json
 {
   "code": 200,
@@ -39,6 +44,7 @@
 ```
 
 **字段说明**：
+
 - `status`：`UP` / `DOWN`，整个应用状态
 - `db`：`UP` / `DOWN`，数据库连通性
 
@@ -46,22 +52,29 @@
 
 ---
 
+
+
 ### 2.2 查询商户配置
 
-| 项 | 值 |
-|---|---|
-| 方法 | `GET` |
-| 路径 | `/api/v1/merchant/{mchId}` |
-| 鉴权 | 内部调用，无 token |
-| 用途 | 按商户号读取配置（v1.0 仅有 1 条默认数据） |
+
+| 项   | 值                          |
+| --- | -------------------------- |
+| 方法  | `GET`                      |
+| 路径  | `/api/v1/merchant/{mchId}` |
+| 鉴权  | 内部调用，无 token               |
+| 用途  | 按商户号读取配置（v1.0 仅有 1 条默认数据）  |
+
 
 **路径参数**：
 
-| 名称 | 类型 | 说明 |
-|---|---|---|
+
+| 名称      | 类型     | 说明  |
+| ------- | ------ | --- |
 | `mchId` | string | 商户号 |
 
+
 **响应示例**：
+
 ```json
 {
   "code": 200,
@@ -74,7 +87,7 @@
     "apiV3Key": "********************************",
     "certSerialNo": null,
     "notifyUrlBase": null,
-    "enabled": 1,
+    "已启用": 1,
     "gmtCreate": "2026-09-14T10:00:00",
     "gmtModified": "2026-09-14T10:00:00"
   }
@@ -85,31 +98,119 @@
 
 ---
 
-### 2.3 待实现 · v1.0 完整接口清单
 
-> 以下接口在 Phase 2/3 实现，本节作为**契约占位**，先定义清楚便于前后端并行。
 
-| 接口 | 方法 | 路径 | 用途 |
-|---|---|---|---|
-| 创建 JSAPI 订单 | POST | `/api/v1/payment/jsapi/create` | 返回 prepay_id，前端调起支付 |
-| 创建 Native 订单 | POST | `/api/v1/payment/native/create` | 返回 code_url，前端生成二维码 |
-| 查询订单 | GET | `/api/v1/payment/order/{out_trade_no}` | 主动查单（兜底轮询） |
-| 申请退款 | POST | `/api/v1/payment/refund/create` | 同步发起退款 |
-| 查询退款 | GET | `/api/v1/payment/refund/{out_refund_no}` | 查退款进度 |
-
----
-
-## 三、微信回调接口
-
-### 3.1 支付成功通知
+### 2.3 创建 JSAPI 支付订单（Phase 2 · Mock 模式可用）
 
 | 项 | 值 |
 |---|---|
-| 路径 | `/notify/v3/pay/success` |
-| 触发时机 | 用户支付成功后 |
-| 鉴权 | 微信签名（验签在请求头 `Wechatpay-Signature`） |
+| 方法 | `POST` |
+| 路径 | `/api/v1/payment/jsapi/create` |
+| 鉴权 | 内部调用 |
+| 用途 | 创建 JSAPI 支付订单，返回 prepay_id 给前端调起支付 |
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `outTradeNo` | string(64) | 是 | 商户订单号（业务侧生成，UUID） |
+| `description` | string(127) | 是 | 订单描述 |
+| `amountTotal` | long | 是 | 订单金额（分），必须 > 0 |
+| `currency` | string | 否 | 货币类型，默认 `CNY` |
+| `openid` | string(64) | 是 | 用户标识（JSAPI 必传） |
+| `attach` | string(128) | 否 | 附加数据 |
+| `timeExpire` | string | 否 | 订单失效时间（ISO8601） |
+
+**请求示例**：
+```json
+{
+  "outTradeNo": "ORDER202609140002",
+  "description": "测试商品描述",
+  "amountTotal": 100,
+  "openid": "oUpF8uMuAJLq5EQxS6Nk-2X0xxxx"
+}
+```
+
+**响应示例**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "prepayId": "MOCK_prepay_911c4e3f05f45759282bfcc4b87750e2",
+    "source": "MOCK"
+  }
+}
+```
+
+**状态码**：
+
+| code | 含义 |
+|---|---|
+| 200 | 下单成功（含 Mock 和 Real） |
+| 400 | 参数校验失败（缺 openid、amountTotal ≤ 0 等） |
+| 409 | 商户订单号已存在（幂等拦截） |
+| 500 | 服务异常（商户配置缺失、SDK 异常等） |
+
+**当前状态**：
+
+- ✅ Mock 模式（默认）：本地零风险，DB 落库后返回伪造 prepay_id
+- ⏳ Real 模式（Phase 2.1）：依赖 wechatpay-java SDK v0.2.12 + 商户私钥
+
+**数据流**：
+
+```
+Client
+  ↓ POST /api/v1/payment/jsapi/create
+JsapiController
+  ↓ 幂等检查（按 out_trade_no）
+  ↓ 加载商户配置（mchId=PLACEHOLDER_MCH_ID）
+  ↓ 业务订单落库（status=SUBMITTING）
+JsapiService (Mock 或 Real)
+  ↓ Real: 调用 wechatpay-java SDK → POST /v3/pay/transactions/jsapi
+  ↓ Mock: 生成伪造 prepay_id
+  ↓ 返回 prepay_id
+Controller
+  ↓ 更新订单状态（status=CREATED）
+  ↓ 返回 prepay_id 给前端
+```
+
+---
+
+### 2.4 待实现 · v1.0 完整接口清单
+
+> 以下接口在 Phase 2/3 实现，本节作为**契约占位**，先定义清楚便于前后端并行。
+
+
+| 接口           | 方法   | 路径                                       | 用途                  | 状态           |
+| ------------ | ---- | ---------------------------------------- | ------------------- | ------------ |
+| 创建 JSAPI 订单  | POST | `/api/v1/payment/jsapi/create`           | 返回 prepay_id，前端调起支付 | ✅ Phase 2    |
+| 创建 Native 订单 | POST | `/api/v1/payment/native/create`          | 返回 code_url，前端生成二维码 | ⏳ Phase 2.2  |
+| 查询订单         | GET  | `/api/v1/payment/order/{out_trade_no}`   | 主动查单（兜底轮询）          | ⏳ Phase 2.3  |
+| 申请退款         | POST | `/api/v1/payment/refund/create`          | 同步发起退款              | ⏳ Phase 3    |
+| 查询退款         | GET  | `/api/v1/payment/refund/{out_refund_no}` | 查退款进度               | ⏳ Phase 3    |
+
+
+---
+
+
+
+## 三、微信回调接口
+
+
+
+### 3.1 支付成功通知
+
+
+| 项    | 值                                  |
+| ---- | ---------------------------------- |
+| 路径   | `/notify/v3/pay/success`           |
+| 触发时机 | 用户支付成功后                            |
+| 鉴权   | 微信签名（验签在请求头 `Wechatpay-Signature`） |
+
 
 **请求头**（验签所需）：
+
 - `Wechatpay-Timestamp`
 - `Wechatpay-Nonce`
 - `Wechatpay-Signature`
@@ -117,6 +218,7 @@
 - `Wechatpay-Signature-Type`
 
 **请求体**（已加密的资源）：
+
 ```json
 {
   "id": "EV-2018022511223320873",
@@ -134,22 +236,29 @@
 ```
 
 **处理流程**：
+
 1. 验签（用平台证书验 `Wechatpay-Signature`）
 2. 防重放（5 分钟内 timestamp + nonce 去重）
 3. 解密 `resource`（用 `api_v3_key`）
 4. 幂等（按 `out_trade_no`）
 5. **立即返回 200/204**，业务逻辑异步消费
 
+
+
 ### 3.2 退款结果通知
 
-| 项 | 值 |
-|---|---|
-| 路径 | `/notify/v3/refund/success` |
-| 触发时机 | 退款状态变化时 |
+
+| 项    | 值                           |
+| ---- | --------------------------- |
+| 路径   | `/notify/v3/refund/success` |
+| 触发时机 | 退款状态变化时                     |
+
 
 **处理流程**：同 3.1，幂等键为 `out_refund_no`
 
 ---
+
+
 
 ## 四、统一响应格式
 
@@ -175,31 +284,41 @@
 
 **错误码规范**：
 
-| code | 含义 |
-|---|---|
-| 200 | 成功 |
-| 400 | 参数错误 |
-| 401 | 未授权 |
-| 404 | 资源不存在 |
-| 500 | 内部错误 |
-| 502 | 微信支付服务端错误 |
+
+| code | 含义        |
+| ---- | --------- |
+| 200  | 成功        |
+| 400  | 参数错误      |
+| 401  | 未授权       |
+| 404  | 资源不存在     |
+| 500  | 内部错误      |
+| 502  | 微信支付服务端错误 |
+
 
 ---
 
+
+
 ## 五、数据模型
+
+
 
 ### 5.1 数据库表清单（v1.0）
 
-| # | 表名 | 用途 | 关键索引 |
-|---|---|---|---|
-| 1 | `t_pay_order` | 支付订单（业务订单） | UK(`out_trade_no`)、IDX(`mch_id`, `status`)、IDX(`gmt_create`) |
-| 2 | `t_pay_transaction` | 微信支付交易流水 | UK(`transaction_id`)、UK(`out_trade_no`)、IDX(`mch_id`, `pay_status`) |
-| 3 | `t_pay_refund` | 退款单 | UK(`out_refund_no`)、IDX(`transaction_id`)、IDX(`mch_id`, `refund_status`) |
-| 4 | `t_pay_notify_log` | 回调原始报文 | IDX(`out_trade_no`)、IDX(`gmt_create`) |
-| 5 | `t_pay_idempotent` | 幂等记录 | UK(`idempotent_key`) |
-| 6 | `t_merchant_config` | 商户配置 | UK(`mch_id`) |
-| 7 | `t_platform_cert` | 微信平台证书缓存 | UK(`serial_no`) |
-| 8 | `t_pay_reconciliation` | 对账记录（v1.1 启用） | IDX(`bill_date`, `mch_id`) |
+
+| #   | 表名                     | 用途            | 关键索引                                                                     |
+| --- | ---------------------- | ------------- | ------------------------------------------------------------------------ |
+| 1   | `t_pay_order`          | 支付订单（业务订单）    | UK(`out_trade_no`)、IDX(`mch_id`, `status`)、IDX(`gmt_create`)             |
+| 2   | `t_pay_transaction`    | 微信支付交易流水      | UK(`transaction_id`)、UK(`out_trade_no`)、IDX(`mch_id`, `pay_status`)      |
+| 3   | `t_pay_refund`         | 退款单           | UK(`out_refund_no`)、IDX(`transaction_id`)、IDX(`mch_id`, `refund_status`) |
+| 4   | `t_pay_notify_log`     | 回调原始报文        | IDX(`out_trade_no`)、IDX(`gmt_create`)                                    |
+| 5   | `t_pay_idempotent`     | 幂等记录          | UK(`idempotent_key`)                                                     |
+| 6   | `t_merchant_config`    | 商户配置          | UK(`mch_id`)                                                             |
+| 7   | `t_platform_cert`      | 微信平台证书缓存      | UK(`serial_no`)                                                          |
+| 8   | `t_pay_reconciliation` | 对账记录（v1.1 启用） | IDX(`bill_date`, `mch_id`)                                               |
+
+
+
 
 ### 5.2 设计原则
 
@@ -210,9 +329,13 @@
 5. **JSON 字段**：微信回调的扩展参数、原始报文用 MySQL 8 的 `JSON` 列
 6. **迁移管理**：所有 DDL 通过 Flyway 脚本，**禁止应用启动时自动建表**
 
+
+
 ### 5.3 关键表 schema（草案）
 
 > 完整 schema 见 `db/schema/V1__weichat_finance_init.sql`。
+
+
 
 #### `t_merchant_config`（当前已实现）
 
@@ -225,7 +348,7 @@ CREATE TABLE `t_merchant_config` (
   `api_v3_key`     VARCHAR(64)  NOT NULL                  COMMENT 'V3 密钥（用于回调解密）',
   `cert_serial_no` VARCHAR(64)           DEFAULT NULL     COMMENT '商户证书序列号',
   `notify_url_base` VARCHAR(512)         DEFAULT NULL     COMMENT '回调 URL 前缀',
-  `enabled`        TINYINT      NOT NULL DEFAULT 1       COMMENT '启用：1=启用，0=禁用',
+  `已启用`        TINYINT      NOT NULL DEFAULT 1       COMMENT '启用：1=启用，0=禁用',
   `gmt_create`     DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `gmt_modified`   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   `is_deleted`     TINYINT      NOT NULL DEFAULT 0,
@@ -236,7 +359,11 @@ CREATE TABLE `t_merchant_config` (
 
 ---
 
+
+
 ## 六、SQL 脚本规范（防乱码）
+
+
 
 ### 6.1 文件位置（**唯一**）
 
@@ -253,6 +380,8 @@ PowerShell 管道默认用 GBK 解码 UTF-8 文件，docker MySQL 客户端默�
 1. MySQL 客户端默认 utf8mb4（`/etc/mysql/conf.d/99-client-utf8mb4.cnf`）
 2. 数据 `merchant_name` 已从 `??????` 修复为 `默认直连商户`
 3. 全部表的表注释 + 字段注释已恢复中文
+
+
 
 ### 6.4 强制规范
 
@@ -275,6 +404,8 @@ docker exec weichat-finance-mysql mysql -uroot -proot --default-character-set=ut
        WHERE TABLE_SCHEMA='weichat_finance' AND COLUMN_COMMENT LIKE '%?%';"
 ```
 
+
+
 ### 6.5 禁止写法
 
 - ❌ `Get-Content -Raw xxx.sql | docker exec -i ... mysql ...`（PowerShell 管道 GBK 解码）
@@ -282,11 +413,15 @@ docker exec weichat-finance-mysql mysql -uroot -proot --default-character-set=ut
 - ❌ `mysql ... < /tmp/xxx.sql` 不加 `--default-character-set=utf8mb4`（客户端字符集兜底）
 - ❌ **新建 V2、V3 等多版本 SQL 脚本**（杜绝多版本造成歧义；新需求直接改 V1）
 
+
+
 ### 6.6 Flyway 集成
 
 - Spring Boot 启动时 Flyway 自动执行 `src/main/resources/db/migration/V1__weichat_finance_init.sql`
 - 应用 `spring.flyway.encoding=utf-8` 确保客户端字符集
 - 数据库手动维护只在 docker 容器内做（重置/调试），不直接动 Flyway 历史
+
+
 
 ### 6.7 重置数据库（需要彻底清库时）
 
@@ -296,3 +431,4 @@ docker exec weichat-finance-mysql mysql -uroot -proot -e \
      CREATE DATABASE weichat_finance CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 # 然后重新跑上面的 4 步流程
 ```
+

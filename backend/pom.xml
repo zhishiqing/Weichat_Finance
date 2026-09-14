@@ -26,10 +26,14 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- MyBatis-Plus 3.5.7（兼容 Spring Boot 3 + JDK 17，本地已缓存） -->
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
+        <!-- Lombok 版本（从 spring-boot-starter-parent 继承） -->
+        <lombok.version>1.18.34</lombok.version>
         <!-- Flyway 10.x（MySQL 8 支持） -->
         <flyway.version>10.20.1</flyway.version>
         <!-- MySQL Connector/J 8.x -->
         <mysql-connector.version>8.4.0</mysql-connector.version>
+        <!-- 微信支付 V3 官方 Java SDK（Phase 2 引入，锁 0.2.12 兼容本地已缓存 jar） -->
+        <wechatpay.version>0.2.12</wechatpay.version>
     </properties>
 
     <dependencies>
@@ -68,7 +72,8 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Flyway 数据库迁移 -->
@@ -98,6 +103,29 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- ====== Phase 2: 微信支付 V3 ====== -->
+
+        <!-- 微信支付 V3 官方 Java SDK -->
+        <dependency>
+            <groupId>com.github.wechatpay-apiv3</groupId>
+            <artifactId>wechatpay-java</artifactId>
+            <version>${wechatpay.version}</version>
+        </dependency>
+
+        <!-- OkHttp：官方 SDK 内置 httpclient，但显式保留以便排查 -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+
+        <!-- BouncyCastle：PKCS#12 证书处理（官方 SDK 已传递依赖） -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>1.78</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -106,6 +134,21 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
             </plugin>
         </plugins>
     </build>

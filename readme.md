@@ -32,23 +32,26 @@
 
 ## 当前进度
 
-**v0.6 · Phase 1 骨架已完成**
+**v0.7 · Phase 2 JSAPI 骨架已完成**
 
 - [x] Spring Boot 骨架（9 个 .java）
 - [x] Flyway 自动迁移 V1
 - [x] 示例接口：`/api/health`、`/api/v1/merchant/{mchId}`
 - [x] 中文全链路验证通过
+- [x] JSAPI 统一下单接口：`POST /api/v1/payment/jsapi/create`
+- [x] Mock 模式 E2E 打通（DB 落库 → 返回 prepay_id → 幂等校验）
 
-下一阶段：**Phase 2 · JSAPI/Native 统一下单 + 回调验签解密**
+下一阶段：**Phase 2.1 · 真实调用（v0.2.12 SDK RSAAutoCertificateConfig 配置）+ 微信回调验签解密**
 
 ## 接口速查
 
 ### 业务接口
 
-| 方法 | 路径 | 用途 |
-|---|---|---|
-| `GET` | `/api/health` | 健康检查（含 DB 状态） |
-| `GET` | `/api/v1/merchant/{mchId}` | 查询商户配置 |
+| 方法 | 路径 | 用途 | 状态 |
+|---|---|---|---|
+| `GET` | `/api/health` | 健康检查（含 DB 状态） | ✅ Phase 1 |
+| `GET` | `/api/v1/merchant/{mchId}` | 查询商户配置 | ✅ Phase 1 |
+| `POST` | `/api/v1/payment/jsapi/create` | 创建 JSAPI 支付订单 | ✅ Phase 2（Mock）/ ⏳ Phase 2.1（Real） |
 
 ### 微信回调（Phase 2 实现）
 
@@ -123,6 +126,7 @@ curl http://localhost:8080/api/health
 
 | 日期 | 版本 | 摘要 |
 |---|---|---|
+| 2026-09-14 | v0.7 | **Phase 2：JSAPI 统一下单骨架**：Mock 模式 E2E 打通，引入 wechatpay-java SDK 0.2.12 |
 | 2026-09-14 | v0.6 | 仓库卫生：清理 target/ + 新增 .gitignore；readme 拆分为 readme + 4 个 docs |
 | 2026-09-14 | v0.5 | Phase 1 骨架：Spring Boot + MyBatis-Plus + Flyway |
 | 2026-09-14 | v0.4 | 数据库 SQL 统一为单脚本 V1 |

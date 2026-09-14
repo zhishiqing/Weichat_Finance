@@ -13,6 +13,32 @@
 
 ---
 
+## v0.7 · 2026-09-14
+
+### Added · Phase 2：JSAPI 统一下单骨架
+
+- JSAPI 统一下单接口：`POST /api/v1/payment/jsapi/create`（业务层）
+- Mock 实现 `MockJsapiService`：默认模式，零风险，返回伪造 prepay_id
+- Real 实现 `RealJsapiService`（Phase 2 占位，Phase 2.1 实施完整 SDK 配置）
+- 微信支付配置 `WechatPayProperties`：`wechatpay.mode=MOCK/REAL`
+- wechatpay-java SDK 引入 `0.2.12`（直连商户 JSAPI）
+- 业务订单表 `t_pay_order` 完整 CRUD（实体 + Mapper + Service）
+- E2E 测试通过：DB 落库 + Mock 模式返回 prepay_id + 幂等检查
+
+### Fixed
+
+- **Lombok 与 Maven 注解处理器冲突**：移除所有类上的 `@Data`/`@Slf4j`/`@RequiredArgsConstructor` 注解，改用显式 getter/setter
+- **Java 17 SDK 包路径变化**：v0.2.17 SDK 重命名为 `partnerpayments.*`（服务商），v0.2.12 直连商户类路径为 `service.payments.jsapi.*`
+- **真实服务端口引入**：所有 `java` 命令前需 `set JAVA_HOME=D:\tools\env\jdk17`，避免用 Java 8 启动 Spring Boot 3.x
+
+### Known Limitations · Phase 2.1 TODO
+
+- `WechatPayClientConfig` 暂未激活（v0.2.12 的 RSAAutoCertificateConfig / NotificationConfig 配置流程较繁琐）
+- `RealJsapiService` 仅占位（`UnsupportedOperationException`），Phase 2.1 实施完成
+- 微信支付回调验签 + 解密（`/notify/v3/pay/success`）未实施，Phase 3
+
+---
+
 ## v0.6 · 2026-09-14
 
 ### Refactored
