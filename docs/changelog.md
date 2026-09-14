@@ -13,6 +13,53 @@
 
 ---
 
+## v0.8 · 2026-09-14
+
+### Added · Phase 2.1 + Phase 2.2 + Phase 3 + Phase 3.4
+
+- **JSAPI 查单接口**：`GET /api/v1/payment/order/{outTradeNo}`
+- **JSAPI 关单接口**：`POST /api/v1/payment/order/{outTradeNo}/close`
+- **Native 支付下单**：`POST /api/v1/payment/native/create`，返回 code_url（Mock 默认）
+- **退款申请**：`POST /api/v1/payment/refund/create`，Mock + Real 双模式
+- **退款查询**：`GET /api/v1/payment/refund/{outRefundNo}`
+- **微信支付回调**：`POST /api/notify/v3/pay/success` 与 `/api/notify/v3/refund/success`
+  - 落库 t_pay_notify_log（原始报文 + 请求头）
+  - **SIGNTEST 探测流量正确处理**（返回 200，不进入业务）
+- **新增实体 / Mapper / Service**：t_pay_transaction / t_pay_refund / t_pay_notify_log / t_pay_idempotent
+- **接入质量评估**：按 Skill 通用清单扫描当前代码，发现并修复以下 🔴 致命问题
+
+### Fixed · 接入质量评估阶段
+
+- 🔴 致命：退款金额上限校验缺失 + 累计已退金额未校验 → 已修复（`RefundController#createRefund`）
+- 🔴 致命：SIGNTEST 探测流量未识别 → 已修复（`WechatNotifyController#isSignTestTraffic`）
+- 🟠 建议：JSAPI/Native 下单"金额字段以后端为准"暂为 TODO Phase 4（当前业务订单=支付订单）
+- 退款请求 DTO 的 `@JsonProperty` 误用 getter，导致 `amountRefund` 解析失败 → 改为字段直接映射
+
+### Known Limitations · 待真实私钥补齐
+
+- 🔴 `WechatPayClientConfig` 暂未激活（v0.2.12 的 RSAAutoCertificateConfig / NotificationConfig）
+- 🔴 `RealJsapiService` / `RealRefundService` / `RealNativeService` 仍是占位
+- 🔴 微信回调验签 + 解密（`NotificationParser`）未激活，目前回调仅落库
+- 🟡 主动查询兜底（定时任务查 NOTPAY 订单）未实施
+
+### 验证情况（Mock 模式 E2E）
+
+| 场景 | 结果 |
+| --- | --- |
+| 健康检查 `/api/health` | ✅ PASS |
+| JSAPI 下单 | ✅ PASS（返回 MOCK_prepay_xxx） |
+| JSAPI 重复下单 | ✅ 409 Conflict（幂等拦截） |
+| JSAPI 查单 | ✅ PASS |
+| JSAPI 关单 | ✅ PASS（状态→CLOSED） |
+| Native 下单 | ✅ PASS（返回 code_url） |
+| 退款申请 | ✅ PASS（落库 + 更新订单状态→REFUNDING） |
+| 退款超额（99999/100） | ✅ 400 + 拦截（致命修复已生效） |
+| 退款查询 | ✅ PASS |
+| 微信 SIGNTEST 探测流量 | ✅ 直接返回 200，不进入业务 |
+| 微信正常回调 | ✅ 落库 t_pay_notify_log，含 headers + body |
+
+---
+
 ## v0.7 · 2026-09-14
 
 ### Added · Phase 2：JSAPI 统一下单骨架
@@ -102,10 +149,9 @@
 
 ## 后续版本（待启动）
 
-- v0.7 · Phase 2：JSAPI/Native 统一下单 + 回调验签解密
-- v0.8 · Phase 3：退款流程 + 幂等保护
-- v0.9 · Phase 4：对账单下载 + 差异对账
-- v1.0 · Phase 5：Dockerfile + docker-compose 全栈部署 + 上线
-- v1.1 · 商家转账、营销券、消费者投诉
+- v0.9 · Phase 2.x：激活 RealJsapiService/RealRefundService/RealNativeService + NotificationParser（真实私钥拿到后）
+- v1.0 · Phase 4：业务订单表 t_business_order + 金额以后端为准
+- v1.1 · Phase 5：对账单下载 + 差异对账 + Dockerfile 全栈部署
+- v1.2 · 商家转账、营销券、消费者投诉
 - v2.0 · 升级服务商（特约商户进件、合单支付、分账）
 - v2.1 · 付款码支付（V2 通道）、委托代扣

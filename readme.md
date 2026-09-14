@@ -32,16 +32,19 @@
 
 ## 当前进度
 
-**v0.7 · Phase 2 JSAPI 骨架已完成**
+**v0.8 · Phase 2.1 + 2.2 + 3 + 接入质量评估已完成**
 
-- [x] Spring Boot 骨架（9 个 .java）
-- [x] Flyway 自动迁移 V1
-- [x] 示例接口：`/api/health`、`/api/v1/merchant/{mchId}`
-- [x] 中文全链路验证通过
-- [x] JSAPI 统一下单接口：`POST /api/v1/payment/jsapi/create`
-- [x] Mock 模式 E2E 打通（DB 落库 → 返回 prepay_id → 幂等校验）
+- [x] Spring Boot 骨架（51 个 .java）
+- [x] Flyway 自动迁移 V1（8 张表）
+- [x] JSAPI 全套：下单 / 查单 / 关单
+- [x] Native 下单
+- [x] 退款申请 / 退款查询（含金额上限 + 累计校验）
+- [x] 微信回调落库（headers + raw_body）+ SIGNTEST 探测识别
+- [x] 幂等保护 t_pay_idempotent 基础设施就绪
+- [x] Mock 模式 E2E 全打通（10 个接口全部 PASS）
+- [x] 接入质量评估：按 Skill 通用清单扫一遍，🔴 致命问题全部修复
 
-下一阶段：**Phase 2.1 · 真实调用（v0.2.12 SDK RSAAutoCertificateConfig 配置）+ 微信回调验签解密**
+下一阶段：**Phase 2.x · 真实私钥补齐后激活 RealJsapiService/RealRefundService/RealNativeService 与 NotificationParser**
 
 ## 接口速查
 
@@ -51,13 +54,19 @@
 |---|---|---|---|
 | `GET` | `/api/health` | 健康检查（含 DB 状态） | ✅ Phase 1 |
 | `GET` | `/api/v1/merchant/{mchId}` | 查询商户配置 | ✅ Phase 1 |
-| `POST` | `/api/v1/payment/jsapi/create` | 创建 JSAPI 支付订单 | ✅ Phase 2（Mock）/ ⏳ Phase 2.1（Real） |
+| `POST` | `/api/v1/payment/jsapi/create` | 创建 JSAPI 支付订单 | ✅ Phase 2（Mock）/ ⏳ Real |
+| `GET` | `/api/v1/payment/order/{outTradeNo}` | 查询支付订单 | ✅ Phase 2.1 |
+| `POST` | `/api/v1/payment/order/{outTradeNo}/close` | 关单 | ✅ Phase 2.1 |
+| `POST` | `/api/v1/payment/native/create` | 创建 Native 支付订单 | ✅ Phase 2.2（Mock） |
+| `POST` | `/api/v1/payment/refund/create` | 申请退款 | ✅ Phase 3（Mock） |
+| `GET` | `/api/v1/payment/refund/{outRefundNo}` | 查询退款 | ✅ Phase 3 |
 
-### 微信回调（Phase 2 实现）
+### 微信回调
 
-| 路径 | 用途 |
-|---|---|
-| `/notify/v3/pay/success` | 支付成功通知 |
+| 路径 | 用途 | 状态 |
+|---|---|---|
+| `POST` `/api/notify/v3/pay/success` | 支付成功通知 | ✅ 落库 ⏳ 验签 |
+| `POST` `/api/notify/v3/refund/success` | 退款成功通知 | ✅ 落库 ⏳ 验签 |
 | `/notify/v3/refund/success` | 退款结果通知 |
 
 完整接口清单见 [docs/api.md](docs/api.md)。

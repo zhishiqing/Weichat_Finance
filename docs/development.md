@@ -191,13 +191,36 @@ backend/
 - Flyway 10 拆分了 DB 支持，**必须加 flyway-mysql 模块**
 - JDBC URL 必须带 `useUnicode=true&characterEncoding=utf8`（连接字符集兜底）
 
-### Phase 2 · 待启动
+### Phase 2 · v0.7（已完成）+ v0.8（已完成）
 
-- JSAPI 统一下单
-- Native 统一下单
-- 回调验签 + 解密 + 防重放
-- 商户证书加载
-- 平台证书缓存
+**v0.7 目标**：JSAPI 统一下单骨架（Mock 模式）
+
+**v0.8 目标**：完整业务闭环（查单/关单/Native/退款/回调/幂等/质量评估）
+
+**已交付接口**（v0.8）：
+
+| 接口         | 方法   | 路径                                       | 模式          |
+| ---------- | ---- | ---------------------------------------- | ----------- |
+| 创建 JSAPI 订单 | POST | `/api/v1/payment/jsapi/create`           | Mock ✅ Real ⏳ |
+| 查询 JSAPI 订单 | GET  | `/api/v1/payment/order/{outTradeNo}`     | Mock ✅ Real ⏳ |
+| 关单         | POST | `/api/v1/payment/order/{outTradeNo}/close` | Mock ✅ Real ⏳ |
+| 创建 Native 订单 | POST | `/api/v1/payment/native/create`          | Mock ✅ Real ⏳ |
+| 申请退款     | POST | `/api/v1/payment/refund/create`          | Mock ✅ Real ⏳ |
+| 查询退款     | GET  | `/api/v1/payment/refund/{outRefundNo}`   | Mock ✅ Real ⏳ |
+| 微信支付回调 | POST | `/api/notify/v3/pay/success`             | 落库 ✅ 验签 ⏳  |
+| 微信退款回调 | POST | `/api/notify/v3/refund/success`          | 落库 ✅ 验签 ⏳  |
+
+**接入质量评估（v0.8）**：按 Skill 通用清单扫描，按 🔴🟡🟠 分级修复。
+
+| 问题 | 等级 | 状态 |
+| --- | --- | --- |
+| 退款金额上限校验缺失 | 🔴 致命 | ✅ 已修 |
+| SIGNTEST 探测流量未识别 | 🔴 致命 | ✅ 已修 |
+| 退款金额累计校验 | 🔴 致命 | ✅ 已修 |
+| 前端传值不可直接入金额（业务订单设计） | 🟠 TODO Phase 4 | 标 TODO |
+| 微信回调验签 + 解密 | 🔴 致命 | ⏳ 待真实私钥 |
+| 主动查询兜底（定时任务） | 🟡 必须 | ⏳ Phase 4.x |
+| Request-Id 日志串联 | 🟠 建议 | ⏳ Phase 2.1 SDK 激活后 |
 
 ### Phase 3 · 待启动
 

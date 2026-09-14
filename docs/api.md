@@ -177,19 +177,115 @@ Controller
 
 ---
 
-### 2.4 待实现 · v1.0 完整接口清单
+### 2.4 v0.8 已实现 · 完整接口清单
 
-> 以下接口在 Phase 2/3 实现，本节作为**契约占位**，先定义清楚便于前后端并行。
+> Phase 2.1/2.2/3 已实现以下接口。详见各小节。
 
+| 接口           | 方法   | 路径                                         | 用途                  | 状态          |
+| ------------ | ---- | ------------------------------------------ | ------------------- | ----------- |
+| 创建 JSAPI 订单  | POST | `/api/v1/payment/jsapi/create`             | 返回 prepay_id，调起支付 | ✅ Phase 2   |
+| 查询 JSAPI 订单  | GET  | `/api/v1/payment/order/{outTradeNo}`       | 主动查单                | ✅ Phase 2.1 |
+| 关单           | POST | `/api/v1/payment/order/{outTradeNo}/close` | 关闭未支付订单             | ✅ Phase 2.1 |
+| 创建 Native 订单 | POST | `/api/v1/payment/native/create`            | 返回 code_url          | ✅ Phase 2.2 |
+| 申请退款         | POST | `/api/v1/payment/refund/create`            | 同步发起退款              | ✅ Phase 3   |
+| 查询退款         | GET  | `/api/v1/payment/refund/{outRefundNo}`     | 查退款进度               | ✅ Phase 3   |
+| 微信支付成功回调     | POST | `/api/notify/v3/pay/success`               | 微信支付通知入口            | ✅ Phase 3   |
+| 微信退款成功回调     | POST | `/api/notify/v3/refund/success`            | 微信退款通知入口            | ✅ Phase 3   |
 
-| 接口           | 方法   | 路径                                       | 用途                  | 状态           |
-| ------------ | ---- | ---------------------------------------- | ------------------- | ------------ |
-| 创建 JSAPI 订单  | POST | `/api/v1/payment/jsapi/create`           | 返回 prepay_id，前端调起支付 | ✅ Phase 2    |
-| 创建 Native 订单 | POST | `/api/v1/payment/native/create`          | 返回 code_url，前端生成二维码 | ⏳ Phase 2.2  |
-| 查询订单         | GET  | `/api/v1/payment/order/{out_trade_no}`   | 主动查单（兜底轮询）          | ⏳ Phase 2.3  |
-| 申请退款         | POST | `/api/v1/payment/refund/create`          | 同步发起退款              | ⏳ Phase 3    |
-| 查询退款         | GET  | `/api/v1/payment/refund/{out_refund_no}` | 查退款进度               | ⏳ Phase 3    |
+#### 2.4.1 查询 JSAPI 订单
 
+| 项   | 值                                  |
+| --- | ---------------------------------- |
+| 方法  | `GET`                              |
+| 路径  | `/api/v1/payment/order/{outTradeNo}` |
+| 鉴权  | 内部                                |
+| 用途  | 按商户订单号查支付订单（Mock 返回 NOTPAY）       |
+
+#### 2.4.2 关单
+
+| 项   | 值                                            |
+| --- | -------------------------------------------- |
+| 方法  | `POST`                                       |
+| 路径  | `/api/v1/payment/order/{outTradeNo}/close`   |
+| 用途  | 按商户订单号关单（Mock 仅日志记录），更新订单状态为 CLOSED |
+
+#### 2.4.3 创建 Native 订单
+
+| 项   | 值                                  |
+| --- | ---------------------------------- |
+| 方法  | `POST`                             |
+| 路径  | `/api/v1/payment/native/create`    |
+| 鉴权  | 内部                                |
+| 用途  | 创建 Native（扫码）订单，返回 code_url |
+
+**请求体**：
+
+```json
+{
+  "outTradeNo": "TEST_NATIVE_001",
+  "description": "测试Native订单",
+  "amountTotal": 200,
+  "currency": "CNY",
+  "attach": "可选附加数据"
+}
+```
+
+**响应示例**：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "codeUrl": "weixin://wxpay/bizpayurl?pr=MOCK_xxx",
+    "source": "MOCK"
+  }
+}
+```
+
+#### 2.4.4 申请退款
+
+| 项   | 值                                  |
+| --- | ---------------------------------- |
+| 方法  | `POST`                             |
+| 路径  | `/api/v1/payment/refund/create`    |
+| 鉴权  | 内部                                |
+| 幂等  | 按 `outRefundNo` 判重               |
+| 用途  | 申请退款（含🔴金额上限校验，已修致命问题）       |
+
+**请求体**：
+
+```json
+{
+  "outRefundNo": "TEST_REFUND_001",
+  "outTradeNo": "TEST_JSAPI_001",
+  "amountRefund": 50,
+  "amountTotal": 100,
+  "reason": "用户申请退款"
+}
+```
+
+**字段说明**：
+
+- `outRefundNo` · 商户退款单号（必填，幂等键）
+- `outTradeNo` · 原商户订单号（必填）
+- `amountRefund` · 退款金额（分，必填，必须 ≤ 原订单金额 - 累计已退金额）
+- `amountTotal` · 原订单金额（分，必填，服务端会**用数据库订单金额覆盖**防止前端篡改）
+- `reason` · 退款原因（可选）
+
+**错误码**：
+
+- 400 · 退款金额超限 / 累计退款金额超限
+- 404 · 原商户订单号不存在
+- 409 · 商户退款单号已存在（重放）
+
+#### 2.4.5 查询退款
+
+| 项   | 值                                      |
+| --- | -------------------------------------- |
+| 方法  | `GET`                                  |
+| 路径  | `/api/v1/payment/refund/{outRefundNo}` |
+| 用途  | 查询退款进度（Mock 返回 SUCCESS 状态）           |
 
 ---
 

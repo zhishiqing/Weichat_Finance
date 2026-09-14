@@ -16,7 +16,7 @@ import com.weichat.finance.payment.v3.jsapi.request.JsapiCreateRequest;
  *   <li>配置 RSAAutoCertificateConfig（v0.2.12）</li>
  *   <li>按 v0.2.12 README 配置 NotificationConfig</li>
  *   <li>添加 JsapiServiceSdk Bean</li>
- *   <li>实现本类 {@link #create} 真实方法</li>
+ *   <li>实现本类所有方法真实逻辑（create / queryByOutTradeNo / closeByOutTradeNo）</li>
  * </ol>
  *
  * <p>参考 SDK 文档：https://github.com/wechatpay-apiv3/wechatpay-java</p>
@@ -28,6 +28,20 @@ public class RealJsapiService implements JsapiService {
 
     @Override
     public JsapiCreateResponse create(JsapiCreateRequest request, MerchantConfig merchant) {
+        throw new UnsupportedOperationException(
+            "RealJsapiService Phase 2 占位实现，请将 wechatpay.mode 切换为 MOCK 验证流程，"
+            + "或等待 Phase 2.1 实施完成后激活");
+    }
+
+    @Override
+    public JsapiQueryResponse queryByOutTradeNo(String outTradeNo, MerchantConfig merchant) {
+        throw new UnsupportedOperationException(
+            "RealJsapiService Phase 2 占位实现，请将 wechatpay.mode 切换为 MOCK 验证流程，"
+            + "或等待 Phase 2.1 实施完成后激活");
+    }
+
+    @Override
+    public void closeByOutTradeNo(String outTradeNo, MerchantConfig merchant) {
         throw new UnsupportedOperationException(
             "RealJsapiService Phase 2 占位实现，请将 wechatpay.mode 切换为 MOCK 验证流程，"
             + "或等待 Phase 2.1 实施完成后激活");

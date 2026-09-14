@@ -8,13 +8,20 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Mock JSAPI 服务（默认）。
  *
  * <p>用于本地开发与单元测试，<strong>不发起真实 HTTP 请求</strong>。</p>
  *
- * <p>生成的 prepay_id 格式：<code>MOCK_prepay_{32位hex}</code>。</p>
+ * <p>Mock 行为：</p>
+ * <ul>
+ *   <li>create：返回 prepay_id 格式 MOCK_prepay_{32位hex}</li>
+ *   <li>queryByOutTradeNo：返回 NOTPAY（未支付）状态</li>
+ *   <li>closeByOutTradeNo：仅打日志，不做实际操作</li>
+ * </ul>
  *
  * @author panhw
  * @since 2026-09-14
@@ -43,5 +50,31 @@ public class MockJsapiService implements JsapiService {
         response.setSource("MOCK");
         log.info("[MOCK] 返回 prepay_id={}", response.getPrepayId());
         return response;
+    }
+
+    @Override
+    public JsapiQueryResponse queryByOutTradeNo(String outTradeNo, MerchantConfig merchant) {
+        log.info("[MOCK] 查询订单: outTradeNo={}", outTradeNo);
+        JsapiQueryResponse response = new JsapiQueryResponse();
+        response.setOutTradeNo(outTradeNo);
+        response.setPayStatus("NOTPAY");
+        response.setTransactionId("MOCK_tx_" + randomHex(20));
+        response.setSource("MOCK");
+        log.info("[MOCK] 订单状态: NOTPAY（未支付）");
+        return response;
+    }
+
+    @Override
+    public void closeByOutTradeNo(String outTradeNo, MerchantConfig merchant) {
+        log.info("[MOCK] 关单: outTradeNo={}", outTradeNo);
+        log.info("[MOCK] 关单成功（仅日志记录）");
+    }
+
+    private String randomHex(int len) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < len; i++) {
+            sb.append(CHARS.charAt(RANDOM.nextInt(CHARS.length())));
+        }
+        return sb.toString();
     }
 }
