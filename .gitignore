@@ -1,0 +1,95 @@
+# ============================================================
+# Weichat_Finance · Git 忽略规则
+# 维护原则：宁可多忽略，不要漏掉（误提交清理比误忽略麻烦）
+# ============================================================
+
+# ---- Java / Maven ----
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# ---- IDE ----
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated/
+.springBeans
+
+# VS Code / Cursor
+.vscode/
+.cursor/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# ---- OS ----
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ---- 项目特定 ----
+# 日志
+*.log
+backend/run.log
+logs/
+spring.log
+
+# 环境配置（敏感信息）
+.env
+.env.local
+.env.*.local
+
+# 证书 / 密钥（绝对不能进仓库）
+*.pem
+*.key
+*.p12
+*.jks
+keystore/
+backend/certs/
+
+# Docker / 部署
+*.pid
+*.swp
+*.bak
+*.tmp
+
+# ---- 构建产物 ----
+*.tar.gz
+*.zip
+*.rar
+
+# ---- MySQL 临时 ----
+docker/mysql/data/
+docker/mysql/conf.d/*.local.cnf

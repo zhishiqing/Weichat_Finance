@@ -1,0 +1,60 @@
+# ============================================================
+# Weichat_Finance · 主配置
+# ============================================================
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: weichat-finance
+
+  # ---- 数据库（连本地 Docker MySQL 容器）----
+  datasource:
+    url: jdbc:mysql://localhost:3306/weichat_finance?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: WeichatFinanceHikari
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+
+  # ---- Flyway 数据库迁移 ----
+  flyway:
+    enabled: true
+    baseline-on-migrate: true         # 已有库的兜底
+    locations: classpath:db/migration  # 迁移脚本位置
+    encoding: UTF-8
+    table: flyway_schema_history
+
+# ---- MyBatis-Plus ----
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true  # 下划线字段映射驼峰
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 开发期打印 SQL
+  global-config:
+    db-config:
+      id-type: AUTO
+      logic-delete-field: is_deleted   # 全局逻辑删除字段
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ---- 日志 ----
+logging:
+  level:
+    root: INFO
+    com.weichat.finance: DEBUG
+    com.baomidou.mybatisplus: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+
+# ---- 自定义业务配置（占位）----
+weichat:
+  finance:
+    # v1.0 默认直连商户
+    default-mch-id: PLACEHOLDER_MCH_ID
