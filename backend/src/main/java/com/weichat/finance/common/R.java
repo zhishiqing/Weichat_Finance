@@ -1,5 +1,8 @@
 package com.weichat.finance.common;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -10,6 +13,8 @@ import java.io.Serializable;
  * @author panhw
  * @since 2026-09-14
  */
+@Data
+@Schema(description = "统一响应格式")
 public class R<T> implements Serializable {
 
     @Serial
@@ -18,8 +23,13 @@ public class R<T> implements Serializable {
     public static final int CODE_SUCCESS = 200;
     public static final int CODE_FAIL = 500;
 
+    @Schema(description = "状态码（200=成功，其他=失败）", example = "200")
     private int code;
+
+    @Schema(description = "提示信息", example = "success")
     private String message;
+
+    @Schema(description = "业务数据")
     private T data;
 
     public R() {}
@@ -45,11 +55,4 @@ public class R<T> implements Serializable {
     public static <T> R<T> fail(int code, String message) {
         return new R<>(code, message, null);
     }
-
-    public int getCode() { return code; }
-    public void setCode(int code) { this.code = code; }
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-    public T getData() { return data; }
-    public void setData(T data) { this.data = data; }
 }

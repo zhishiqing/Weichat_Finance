@@ -1,23 +1,21 @@
 package com.weichat.finance.payment.v3.jsapi;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
 /**
- * JSAPI 统一下单响应。
- *
- * <p>前端拿到 prepay_id 后，用 WeixinJSBridge 调起支付。</p>
+ * JSAPI 统一下单响应（调起支付用）。
  *
  * @author panhw
  * @since 2026-09-14
  */
+@Data
+@Schema(description = "JSAPI 统一下单响应")
 public class JsapiCreateResponse {
 
-    /** 预支付交易会话标识（前端的 package 字段 = "prepay_id=" + 此值）。 */
+    @Schema(description = "预支付会话标识", example = "wx2014102720093954e6e7d1a01234567")
     private String prepayId;
 
-    /** 数据来源：MOCK / REAL，便于排查。 */
+    @Schema(description = "数据来源（MOCK / REAL）", example = "MOCK", allowableValues = {"MOCK", "REAL"})
     private String source;
-
-    public String getPrepayId() { return prepayId; }
-    public void setPrepayId(String prepayId) { this.prepayId = prepayId; }
-    public String getSource() { return source; }
-    public void setSource(String source) { this.source = source; }
 }

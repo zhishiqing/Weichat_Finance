@@ -1,36 +1,39 @@
 package com.weichat.finance.payment.v3.jsapi;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 /**
- * 微信支付订单查询响应。
- *
- * <p>对应微信支付 V3 接口：GET /v3/pay/transactions/out-trade-no/{out_trade_no}</p>
+ * JSAPI 查询订单响应。
  *
  * @author panhw
  * @since 2026-09-14
  */
 @Data
+@Schema(description = "JSAPI 查询订单响应")
 public class JsapiQueryResponse {
 
-    /** 商户订单号 */
+    @Schema(description = "商户订单号", example = "ORDER_20260914_001")
     private String outTradeNo;
 
-    /** 微信支付订单号（SUCCESS 后才有） */
+    @Schema(description = "微信支付订单号", example = "4200001234202309156060123456789")
     private String transactionId;
 
-    /** 支付状态：NOTPAY / SUCCESS / CLOSED / REVOKED / REFUNDED */
+    @Schema(description = "支付状态", example = "SUCCESS",
+        allowableValues = {"NOTPAY", "SUCCESS", "CLOSED", "REVOKED", "REFUNDED"})
     private String payStatus;
 
-    /** 用户实际支付金额（分） */
+    @Schema(description = "用户实际支付金额（分）", example = "100")
     private Long amountPayerTotal;
 
-    /** 付款银行 */
+    @Schema(description = "付款银行类型", example = "CMC")
     private String bankType;
 
-    /** 支付成功时间（ISO 格式） */
-    private String successTime;
+    @Schema(description = "支付成功时间")
+    private LocalDateTime successTime;
 
-    /** 数据来源：MOCK / REAL */
+    @Schema(description = "数据来源（MOCK / REAL）", example = "MOCK", allowableValues = {"MOCK", "REAL"})
     private String source;
 }
