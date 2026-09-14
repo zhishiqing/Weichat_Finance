@@ -1,6 +1,8 @@
 package com.weichat.finance.controller;
 
 import com.weichat.finance.common.R;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +23,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/health")
+@Tag(name = "健康检查", description = "应用探活 + 数据库连通性验证")
 public class HealthController {
 
     private final DataSource dataSource;
@@ -29,6 +32,7 @@ public class HealthController {
         this.dataSource = dataSource;
     }
 
+    @Operation(summary = "健康检查", description = "返回应用信息 + 数据库连通性验证（MySQL 版本）")
     @GetMapping
     public R<Map<String, Object>> health() throws Exception {
         Map<String, Object> info = new HashMap<>();

@@ -10,6 +10,8 @@ import com.weichat.finance.payment.v3.nativepay.NativeCreateResponse;
 import com.weichat.finance.payment.v3.nativepay.NativeService;
 import com.weichat.finance.service.MerchantConfigService;
 import com.weichat.finance.service.PayOrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/v1/payment")
+@Tag(name = "Native 支付", description = "Native 扫码支付下单")
 public class NativeController {
 
     private static final Logger log = LoggerFactory.getLogger(NativeController.class);
@@ -52,6 +55,7 @@ public class NativeController {
      *
      * <p>🟠 TODO Phase 4：引入 {@code t_business_order}，前端只传 {@code business_order_id}，金额后端查。</p>
      */
+    @Operation(summary = "创建 Native 支付订单", description = "传入商户订单号、金额，返回 code_url 用于生成二维码")
     @PostMapping("/native/create")
     public R<NativeCreateResponse> create(@Valid @RequestBody NativeCreateRequest request) {
         log.info("创建 Native 订单: outTradeNo={}, amountTotal={}",

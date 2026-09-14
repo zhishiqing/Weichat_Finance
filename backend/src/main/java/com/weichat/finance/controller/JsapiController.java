@@ -11,6 +11,9 @@ import com.weichat.finance.payment.v3.jsapi.JsapiService;
 import com.weichat.finance.payment.v3.jsapi.request.JsapiCreateRequest;
 import com.weichat.finance.service.MerchantConfigService;
 import com.weichat.finance.service.PayOrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,9 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>对外暴露：</p>
  * <ul>
- *   <li>{@code POST /api/v1/payment/jsapi/create} · 创建 JSAPI 支付订单</li>
- *   <li>{@code GET  /api/v1/payment/order/{outTradeNo}} · 查询支付订单</li>
- *   <li>{@code POST /api/v1/payment/order/{outTradeNo}/close} · 关单</li>
+ *   <li>{@code POST /v1/payment/jsapi/create} · 创建 JSAPI 支付订单</li>
+ *   <li>{@code GET  /v1/payment/order/{outTradeNo}} · 查询支付订单</li>
+ *   <li>{@code POST /v1/payment/order/{outTradeNo}/close} · 关单</li>
  * </ul>
  *
  * @author panhw
@@ -36,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/v1/payment")
+@Tag(name = "JSAPI 支付", description = "JSAPI 统一下单 / 查单 / 关单")
 public class JsapiController {
 
     private static final Logger log = LoggerFactory.getLogger(JsapiController.class);
@@ -58,9 +62,10 @@ public class JsapiController {
      *
      * <p>Phase 2.x 简化设计：业务订单与支付订单合一（{@code t_pay_order}），金额从前端入参（必填校验）。</p>
      *
-     * <p>🟠 TODO Phase 4：引入 {@code t_business_order}，前端只传 {@code business_order_id}，
+     * <p>TODO Phase 4：引入 {@code t_business_order}，前端只传 {@code business_order_id}，
      * 金额/描述/商户号/用户标识 全部从后端业务订单读取，杜绝前端篡改。</p>
      */
+    @Operation(summary = "创建 JSAPI 支付订单", description = "传入商户订单号、金额、openid，返回 prepay_id 用于前端调起微信支付")
     @PostMapping("/jsapi/create")
     public R<JsapiCreateResponse> create(@Valid @RequestBody JsapiCreateRequest request) {
         log.info("创建 JSAPI 订单: outTradeNo={}, amountTotal={}",
@@ -104,8 +109,9 @@ public class JsapiController {
     /**
      * 查询支付订单（按商户订单号）。
      */
+    @Operation(summary = "查询支付订单", description = "按商户订单号查询支付状态，Mock 模式返回 NOTPAY（未支付）")
     @GetMapping("/order/{outTradeNo}")
-    public R<JsapiQueryResponse> queryByOutTradeNo(@PathVariable String outTradeNo) {
+    public R<JsapiQueryResponse> queryByOutTradeNo(@Parameter(description = "商户订单号") @PathVariable String outTradeNo) {
         log.info("查询支付订单: outTradeNo={}", outTradeNo);
 
         PayOrder order = payOrderService.getByOutTradeNo(outTradeNo);
@@ -125,8 +131,9 @@ public class JsapiController {
     /**
      * 关单（按商户订单号）。
      */
+    @Operation(summary = "关单", description = "关闭未支付订单（Mock 仅日志记录），更新订单状态为 CLOSED")
     @PostMapping("/order/{outTradeNo}/close")
-    public R<Void> closeByOutTradeNo(@PathVariable String outTradeNo) {
+    public R<Void> closeByOutTradeNo(@Parameter(description = "商户订单号") @PathVariable String outTradeNo) {
         log.info("关单: outTradeNo={}", outTradeNo);
 
         PayOrder order = payOrderService.getByOutTradeNo(outTradeNo);

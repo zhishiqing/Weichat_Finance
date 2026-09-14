@@ -12,6 +12,9 @@ import com.weichat.finance.payment.v3.refund.request.RefundCreateRequest;
 import com.weichat.finance.service.MerchantConfigService;
 import com.weichat.finance.service.PayOrderService;
 import com.weichat.finance.service.PayRefundService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/v1/payment")
+@Tag(name = "退款管理", description = "退款申请 / 退款查询")
 public class RefundController {
 
     private static final Logger log = LoggerFactory.getLogger(RefundController.class);
@@ -59,6 +63,7 @@ public class RefundController {
     /**
      * 申请退款（幂等：按 outRefundNo 判重）。
      */
+    @Operation(summary = "申请退款", description = "按商户退款单号幂等申请退款，含退款金额上限校验（单笔+累计）")
     @PostMapping("/refund/create")
     public R<RefundCreateResponse> createRefund(@Valid @RequestBody RefundCreateRequest request) {
         log.info("申请退款: outRefundNo={}, outTradeNo={}, amountRefund={}分",
@@ -141,8 +146,9 @@ public class RefundController {
     /**
      * 查询退款单。
      */
+    @Operation(summary = "查询退款单", description = "按商户退款单号查询退款进度（Mock 返回 SUCCESS 状态）")
     @GetMapping("/refund/{outRefundNo}")
-    public R<RefundCreateResponse> queryRefund(@PathVariable String outRefundNo) {
+    public R<RefundCreateResponse> queryRefund(@Parameter(description = "商户退款单号") @PathVariable String outRefundNo) {
         log.info("查询退款: outRefundNo={}", outRefundNo);
 
         PayRefund refund = payRefundService.getByOutRefundNo(outRefundNo);

@@ -59,6 +59,29 @@ weichat:
     # v1.0 默认直连商户
     default-mch-id: PLACEHOLDER_MCH_ID
 
+# ---- Knife4j / Swagger 增强配置 ----
+# Spring Boot 3 + Jakarta EE 9 适配
+knife4j:
+  enable: true                       # 启用 Knife4j（生产环境设为 false）
+  setting:
+    language: zh_cn                  # 中文界面
+    enable-version: true             # 文档多版本切换（顶部 tab）
+    enable-swagger-models: true      # 左侧显示 Model 列表
+    swagger-model-name: 实体类列表
+  basic:
+    enable: false                    # 关闭 Knife4j 自带 Basic 认证（开发期不需要）
+    username: admin
+    password: admin
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs               # OpenAPI JSON 路径
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html           # 原生 Swagger UI 路径
+  default-flat-param-object: true    # 扁平化参数对象，便于表单调试
+
 # ---- 微信支付配置（Phase 2）----
 # mode=MOCK（默认）：本地开发，零风险，返回伪造 prepay_id
 # mode=REAL：调用微信支付 V3 真实接口（需提供真实商户凭证）

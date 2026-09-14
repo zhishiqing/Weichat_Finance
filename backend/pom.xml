@@ -122,6 +122,13 @@
             <artifactId>bcpkix-jdk18on</artifactId>
             <version>1.78</version>
         </dependency>
+
+        <!-- Knife4j（基于 OpenAPI 3）+ Swagger · Spring Boot 3 + Jakarta EE 9 专用 starter -->
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+            <version>4.5.0</version>
+        </dependency>
     </dependencies>
 
     <build>
