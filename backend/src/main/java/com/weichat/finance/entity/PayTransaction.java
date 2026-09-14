@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.weichat.finance.entity.enums.CommonFlag;
 import com.weichat.finance.entity.enums.PayStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serial;
@@ -26,61 +27,58 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("t_pay_transaction")
+@Schema(description = "微信支付交易流水表（t_pay_transaction）")
 public class PayTransaction implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** 主键 ID（自增） */
+    @Schema(description = "主键 ID（自增）", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    /** 商户订单号（与 t_pay_order.out_trade_no 一致） */
+    @Schema(description = "商户订单号（与 t_pay_order.out_trade_no 一致）", example = "ORDER_20260914_001")
     private String outTradeNo;
 
-    /** 微信支付订单号（SUCCESS 后才有，唯一） */
+    @Schema(description = "微信支付订单号（SUCCESS 后才有，唯一）", example = "4200001234202309156060123456789")
     private String transactionId;
 
-    /** 商户号 */
+    @Schema(description = "商户号", example = "1900000109")
     private String mchId;
 
-    /**
-     * 支付状态（来自微信侧）。
-     *
-     * @see PayStatus#NOTPAY 未支付
-     * @see PayStatus#SUCCESS 支付成功
-     * @see PayStatus#CLOSED 已关闭
-     * @see PayStatus#REVOKED 已撤销（付款码专用）
-     * @see PayStatus#REFUNDED 已全额退款
-     */
+    @Schema(description = "支付状态（来自微信侧）",
+        example = PayStatus.SUCCESS,
+        allowableValues = {
+            PayStatus.NOTPAY, PayStatus.SUCCESS,
+            PayStatus.CLOSED, PayStatus.REVOKED, PayStatus.REFUNDED})
     private String payStatus;
 
-    /** 用户实际支付金额（单位：分，应收减去优惠） */
+    @Schema(description = "用户实际支付金额（单位：分，应收减去优惠）", example = "100")
     private Long amountPayerTotal;
 
-    /** 付款银行类型（如 CMC、ICBC 等，SUCCESS 后由微信回传） */
+    @Schema(description = "付款银行类型（如 CMC、ICBC 等，SUCCESS 后由微信回传）", example = "CMC")
     private String bankType;
 
-    /** 支付成功时间（微信回传） */
+    @Schema(description = "支付成功时间（微信回传）", example = "2026-09-14T12:00:00")
     private LocalDateTime successTime;
 
-    /** 下单接口原始响应（JSON 格式，含 prepay_id 或 code_url，便于排障） */
+    @Schema(description = "下单接口原始响应（JSON 格式，含 prepay_id 或 code_url，便于排障）",
+        example = "{\"prepay_id\":\"wx2014102720093954e6e7d1a01234567\"}")
     private String rawResponse;
 
-    /** 创建时间（MyBatis-Plus 自动填充） */
+    @Schema(description = "创建时间（MyBatis-Plus 自动填充）", example = "2026-09-14T10:00:00", accessMode = Schema.AccessMode.READ_ONLY)
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime gmtCreate;
 
-    /** 更新时间（MyBatis-Plus 自动填充） */
+    @Schema(description = "更新时间（MyBatis-Plus 自动填充）", example = "2026-09-14T10:00:00", accessMode = Schema.AccessMode.READ_ONLY)
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime gmtModified;
 
-    /**
-     * 逻辑删除标记。
-     *
-     * @see CommonFlag#NOT_DELETED 未删
-     * @see CommonFlag#DELETED 已删
-     */
+    @Schema(description = "逻辑删除标记",
+        example = "0",
+        allowableValues = {"0", "1"},
+        defaultValue = "0",
+        accessMode = Schema.AccessMode.READ_ONLY)
     @TableLogic
     private Integer isDeleted;
 }

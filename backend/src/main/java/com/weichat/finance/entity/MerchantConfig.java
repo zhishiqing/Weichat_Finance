@@ -6,7 +6,9 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.weichat.finance.entity.enums.CommonFlag;
 import com.weichat.finance.entity.enums.MerchantMode;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serial;
@@ -23,72 +25,67 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("t_merchant_config")
+@Schema(description = "商户配置表（t_merchant_config）")
 public class MerchantConfig implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** 主键 ID（自增） */
+    @Schema(description = "主键 ID（自增）", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    /** 商户号（微信支付分配，唯一） */
+    @Schema(description = "商户号（微信支付分配，唯一）", example = "1900000109")
     private String mchId;
 
-    /** 公众号或小程序 AppID */
+    @Schema(description = "公众号或小程序 AppID", example = "wx8888888888888888")
     private String appId;
 
-    /** 商户名称（仅作展示，不参与业务逻辑） */
+    @Schema(description = "商户名称（仅作展示，不参与业务逻辑）", example = "示例商户")
     private String merchantName;
 
-    /**
-     * 商户模式。
-     *
-     * @see MerchantMode#DIRECT 直连商户
-     * @see MerchantMode#PARTNER 服务商（v2.0）
-     */
+    @Schema(description = "商户模式",
+        example = MerchantMode.DIRECT,
+        allowableValues = {MerchantMode.DIRECT, MerchantMode.PARTNER})
     private String mode;
 
-    /** V3 密钥（32 位，用于回调解密 resource.ciphertext） */
+    @Schema(description = "V3 密钥（32 位，用于回调解密 resource.ciphertext）", example = "abcdefghijklmnopqrstuvwxyz123456")
     private String apiV3Key;
 
-    /** 商户 API 证书序列号（用于请求加签 + 回调验签） */
+    @Schema(description = "商户 API 证书序列号（用于请求加签 + 回调验签）", example = "SERIAL_NO_123")
     private String certSerialNo;
 
-    /** 商户 API 证书私钥文件路径（PEM 格式） */
+    @Schema(description = "商户 API 证书私钥文件路径（PEM 格式）", example = "D:/certs/apiclient_key.pem")
     private String certPrivateKeyPath;
 
-    /** 回调地址前缀（拼上具体路径即回调 URL） */
+    @Schema(description = "回调地址前缀（拼上具体路径即回调 URL）", example = "https://api.example.com/api/notify/v3")
     private String notifyUrlBase;
 
-    /** V2 密钥（v2.1 付款码启用） */
+    @Schema(description = "V2 密钥（v2.1 付款码启用）", example = "v2keyxxxxxxxxxxxxxxxxxxxxxx")
     private String v2Key;
 
-    /**
-     * 是否启用。
-     *
-     * @see CommonFlag#ENABLED 启用
-     * @see CommonFlag#DISABLED 禁用
-     */
+    @Schema(description = "是否启用",
+        example = "1",
+        allowableValues = {"0", "1"},
+        defaultValue = "1")
     private Integer enabled;
 
-    /** 扩展配置（JSON 格式，预留字段） */
+    @Schema(description = "扩展配置（JSON 格式，预留字段）", example = "{\"k\":\"v\"}")
     private String ext;
 
-    /** 创建时间（MyBatis-Plus 自动填充） */
+    @Schema(description = "创建时间（MyBatis-Plus 自动填充）", example = "2026-09-14T10:00:00", accessMode = Schema.AccessMode.READ_ONLY)
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime gmtCreate;
 
-    /** 更新时间（MyBatis-Plus 自动填充） */
+    @Schema(description = "更新时间（MyBatis-Plus 自动填充）", example = "2026-09-14T10:00:00", accessMode = Schema.AccessMode.READ_ONLY)
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime gmtModified;
 
-    /**
-     * 逻辑删除标记。
-     *
-     * @see CommonFlag#NOT_DELETED 未删
-     * @see CommonFlag#DELETED 已删
-     */
+    @Schema(description = "逻辑删除标记",
+        example = "0",
+        allowableValues = {"0", "1"},
+        defaultValue = "0",
+        accessMode = Schema.AccessMode.READ_ONLY)
     @TableLogic
     private Integer isDeleted;
 }

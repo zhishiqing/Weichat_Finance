@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.weichat.finance.entity.enums.CommonFlag;
 import com.weichat.finance.entity.enums.OrderStatus;
 import com.weichat.finance.entity.enums.ProductType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serial;
@@ -27,80 +28,77 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("t_pay_order")
+@Schema(description = "业务订单表（t_pay_order）")
 public class PayOrder implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** 主键 ID（自增） */
+    @Schema(description = "主键 ID（自增）", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    /** 商户订单号（业务侧生成，UUID 等，唯一） */
+    @Schema(description = "商户订单号（业务侧生成，唯一）", example = "ORDER_20260914_001", maxLength = 32)
     private String outTradeNo;
 
-    /** 商户号 */
+    @Schema(description = "商户号", example = "1900000109", maxLength = 32)
     private String mchId;
 
-    /** 公众号或小程序 AppID */
+    @Schema(description = "公众号或小程序 AppID", example = "wx8888888888888888", maxLength = 32)
     private String appId;
 
-    /** 订单描述（最长 127 字符） */
+    @Schema(description = "订单描述（最长 127 字符）", example = "商品名称", maxLength = 127)
     private String description;
 
-    /** 订单金额（单位：分，必须为正整数，避免浮点精度问题） */
+    @Schema(description = "订单金额（单位：分，必须为正整数，避免浮点精度问题）", example = "100")
     private Long amountTotal;
 
-    /** 货币类型，默认 CNY */
+    @Schema(description = "货币类型，默认 CNY", example = "CNY", maxLength = 16, defaultValue = "CNY")
     private String currency;
 
-    /** 用户标识（JSAPI 必填，Native 为空） */
+    @Schema(description = "用户标识（JSAPI 必填，Native 为空）", example = "oUpF8uMuAJxxyfBWk2e3tR3R6_T4", maxLength = 128)
     private String openid;
 
-    /**
-     * 支付产品类型。
-     *
-     * @see ProductType#JSAPI JSAPI 支付（公众号 / 小程序内）
-     * @see ProductType#NATIVE Native 支付（扫码）
-     */
+    @Schema(description = "支付产品类型",
+        example = ProductType.JSAPI,
+        allowableValues = {ProductType.JSAPI, ProductType.NATIVE})
     private String productType;
 
-    /**
-     * 订单状态。
-     *
-     * @see OrderStatus 详细状态机说明
-     */
+    @Schema(description = "订单状态",
+        example = OrderStatus.SUCCESS,
+        allowableValues = {
+            OrderStatus.SUBMITTING, OrderStatus.CREATED, OrderStatus.SUCCESS,
+            OrderStatus.CLOSED, OrderStatus.REFUNDING, OrderStatus.REFUNDED})
     private String status;
 
-    /** 订单失效时间（未支付则到期自动关闭） */
+    @Schema(description = "订单失效时间（未支付则到期自动关闭）", example = "2026-12-31T23:59:59")
     private LocalDateTime timeExpire;
 
-    /** 支付成功时间（微信回传，状态变为 SUCCESS 时填充） */
+    @Schema(description = "支付成功时间（微信回传，状态变为 SUCCESS 时填充）", example = "2026-09-14T12:00:00")
     private LocalDateTime successTime;
 
-    /** 回调地址（商户配置 notifyUrlBase + 业务路径拼接） */
+    @Schema(description = "回调地址（商户配置 notifyUrlBase + 业务路径拼接）", example = "https://api.example.com/api/notify/v3/pay/success")
     private String notifyUrl;
 
-    /** 附加数据（最长 128 字符，原样回传） */
+    @Schema(description = "附加数据（最长 128 字符，原样回传）", example = "{\"k\":\"v\"}", maxLength = 128)
     private String attach;
 
-    /** 扩展参数（JSON 格式，预留字段） */
+    @Schema(description = "扩展参数（JSON 格式，预留字段）", example = "{\"k\":\"v\"}")
     private String ext;
 
-    /** 创建时间（MyBatis-Plus 自动填充） */
+    @Schema(description = "创建时间（MyBatis-Plus 自动填充）", example = "2026-09-14T10:00:00", accessMode = Schema.AccessMode.READ_ONLY)
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime gmtCreate;
 
-    /** 更新时间（MyBatis-Plus 自动填充） */
+    @Schema(description = "更新时间（MyBatis-Plus 自动填充）", example = "2026-09-14T10:00:00", accessMode = Schema.AccessMode.READ_ONLY)
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime gmtModified;
 
-    /**
-     * 逻辑删除标记。
-     *
-     * @see CommonFlag#NOT_DELETED 未删
-     * @see CommonFlag#DELETED 已删
-     */
+    @Schema(description = "逻辑删除标记",
+        example = "0",
+        allowableValues = {"0", "1"},
+        defaultValue = "0",
+        accessMode = Schema.AccessMode.READ_ONLY)
     @TableLogic
     private Integer isDeleted;
 }
