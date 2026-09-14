@@ -13,6 +13,33 @@
 
 ---
 
+## v1.0 · 2026-09-14
+
+### Added · 实体字段文档化 + 枚举常量
+
+- **6 个实体每个字段添加 javadoc 说明**，含枚举值引用（`@see OrderStatus` 等）
+- **新增 9 个枚举常量类**（位于 `entity/enums/`）：
+  - `OrderStatus`（包含状态机图）
+  - `ProductType`
+  - `PayStatus`
+  - `RefundStatus`（包含状态机图）
+  - `NotifyType`
+  - `NotifyResult`
+  - `IdempotentOperation`
+  - `IdempotentResult`
+  - `MerchantMode`
+  - `CommonFlag`（启用/禁用、逻辑删除）
+- 所有 Controller / Service 中的硬编码字符串替换为枚举引用
+- **好处**：IDE 自动补全、重命名安全、消除拼写错误、文档化业务规则
+
+### 验证
+
+- 编译通过：61 个文件
+- E2E 全 PASS：JSAPI 下单、退款、回调落库
+- 数据库枚举值正确落库（status=REFUNDING / product_type=JSAPI / pay_status=NOTPAY 等）
+
+---
+
 ## v0.9 · 2026-09-14
 
 ### Refactored · Lombok 修复（实体回归 @Data）
