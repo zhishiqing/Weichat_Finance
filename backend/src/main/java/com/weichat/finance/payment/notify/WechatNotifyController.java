@@ -1,8 +1,10 @@
 package com.weichat.finance.payment.notify;
 
-import com.weichat.finance.entity.PayNotifyLog;
-import com.weichat.finance.service.PayNotifyLogService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.weichat.finance.entity.PayNotifyLog;
+import com.weichat.finance.entity.enums.NotifyResult;
+import com.weichat.finance.entity.enums.NotifyType;
+import com.weichat.finance.service.PayNotifyLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,12 +94,12 @@ public class WechatNotifyController {
         headers.put("Wechatpay-Serial", nullToEmpty(wechatpaySerial));
 
         PayNotifyLog logEntity = new PayNotifyLog();
-        logEntity.setNotifyType("PAY");
+        logEntity.setNotifyType(NotifyType.PAY);
         logEntity.setMchId(extractMchIdFromBody(rawBody));
         logEntity.setHeaders(MAPPER.writeValueAsString(headers));
         logEntity.setRawBody(rawBody);
-        logEntity.setVerifyResult("SKIPPED_PHASE3");
-        logEntity.setProcessResult("IGNORED_PHASE3");
+        logEntity.setVerifyResult(NotifyResult.SKIPPED_PHASE3);
+        logEntity.setProcessResult(NotifyResult.IGNORED_PHASE3);
         logEntity.setErrorMessage("待真实私钥补齐后激活验签/解密流程");
         payNotifyLogService.save(logEntity);
 
@@ -134,12 +136,12 @@ public class WechatNotifyController {
         headers.put("Wechatpay-Serial", nullToEmpty(wechatpaySerial));
 
         PayNotifyLog logEntity = new PayNotifyLog();
-        logEntity.setNotifyType("REFUND");
+        logEntity.setNotifyType(NotifyType.REFUND);
         logEntity.setMchId(extractMchIdFromBody(rawBody));
         logEntity.setHeaders(MAPPER.writeValueAsString(headers));
         logEntity.setRawBody(rawBody);
-        logEntity.setVerifyResult("SKIPPED_PHASE3");
-        logEntity.setProcessResult("IGNORED_PHASE3");
+        logEntity.setVerifyResult(NotifyResult.SKIPPED_PHASE3);
+        logEntity.setProcessResult(NotifyResult.IGNORED_PHASE3);
         logEntity.setErrorMessage("待真实私钥补齐后激活验签/解密流程");
         payNotifyLogService.save(logEntity);
 

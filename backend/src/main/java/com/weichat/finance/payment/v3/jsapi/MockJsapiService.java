@@ -1,6 +1,7 @@
 package com.weichat.finance.payment.v3.jsapi;
 
 import com.weichat.finance.entity.MerchantConfig;
+import com.weichat.finance.entity.enums.PayStatus;
 import com.weichat.finance.payment.v3.jsapi.request.JsapiCreateRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,7 +9,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -57,7 +57,7 @@ public class MockJsapiService implements JsapiService {
         log.info("[MOCK] 查询订单: outTradeNo={}", outTradeNo);
         JsapiQueryResponse response = new JsapiQueryResponse();
         response.setOutTradeNo(outTradeNo);
-        response.setPayStatus("NOTPAY");
+        response.setPayStatus(PayStatus.NOTPAY);
         response.setTransactionId("MOCK_tx_" + randomHex(20));
         response.setSource("MOCK");
         log.info("[MOCK] 订单状态: NOTPAY（未支付）");

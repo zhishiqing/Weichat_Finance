@@ -2,6 +2,7 @@ package com.weichat.finance.payment.v3.refund;
 
 import com.weichat.finance.entity.MerchantConfig;
 import com.weichat.finance.entity.PayRefund;
+import com.weichat.finance.entity.enums.RefundStatus;
 import com.weichat.finance.payment.v3.refund.request.RefundCreateRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ public class MockRefundService implements RefundService {
         RefundCreateResponse response = new RefundCreateResponse();
         response.setOutRefundNo(request.getOutRefundNo());
         response.setRefundId("MOCK_refund_" + randomHex(20));
-        response.setRefundStatus("PROCESSING");
+        response.setRefundStatus(RefundStatus.PROCESSING);
         response.setCreatedAt(LocalDateTime.now());
         response.setSource("MOCK");
         log.info("[MOCK] 退款受理成功: refundId={}", response.getRefundId());
@@ -47,7 +48,7 @@ public class MockRefundService implements RefundService {
         RefundCreateResponse response = new RefundCreateResponse();
         response.setOutRefundNo(outRefundNo);
         response.setRefundId("MOCK_refund_" + randomHex(20));
-        response.setRefundStatus("SUCCESS");
+        response.setRefundStatus(RefundStatus.SUCCESS);
         response.setSource("MOCK");
         return response;
     }

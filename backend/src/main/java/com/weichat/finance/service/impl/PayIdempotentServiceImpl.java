@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.weichat.finance.entity.PayIdempotent;
+import com.weichat.finance.entity.enums.IdempotentResult;
 import com.weichat.finance.mapper.PayIdempotentMapper;
 import com.weichat.finance.service.PayIdempotentService;
 import org.slf4j.Logger;
@@ -34,7 +35,7 @@ public class PayIdempotentServiceImpl extends ServiceImpl<PayIdempotentMapper, P
         PayIdempotent record = new PayIdempotent();
         record.setIdempotentKey(idempotentKey);
         record.setOperation(operation);
-        record.setResultCode("PROCESSING");
+        record.setResultCode(IdempotentResult.PROCESSING);
         try {
             boolean ok = save(record);
             if (ok) {

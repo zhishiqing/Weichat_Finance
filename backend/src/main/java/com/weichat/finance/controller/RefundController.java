@@ -4,6 +4,8 @@ import com.weichat.finance.common.R;
 import com.weichat.finance.entity.MerchantConfig;
 import com.weichat.finance.entity.PayOrder;
 import com.weichat.finance.entity.PayRefund;
+import com.weichat.finance.entity.enums.OrderStatus;
+import com.weichat.finance.entity.enums.RefundStatus;
 import com.weichat.finance.payment.v3.refund.RefundCreateResponse;
 import com.weichat.finance.payment.v3.refund.RefundService;
 import com.weichat.finance.payment.v3.refund.request.RefundCreateRequest;
@@ -117,7 +119,7 @@ public class RefundController {
         refundEntity.setAmountRefund(request.getAmountRefund());
         refundEntity.setAmountTotal(request.getAmountTotal());
         refundEntity.setReason(request.getReason());
-        refundEntity.setRefundStatus("PROCESSING");
+        refundEntity.setRefundStatus(RefundStatus.PROCESSING);
         refundEntity.setNotifyUrl(merchant.getNotifyUrlBase() + "/notify/v3/refund/success");
         payRefundService.save(refundEntity);
 
@@ -130,7 +132,7 @@ public class RefundController {
         payRefundService.updateById(refundEntity);
 
         // 业务订单状态
-        order.setStatus("REFUNDING");
+        order.setStatus(OrderStatus.REFUNDING);
         payOrderService.updateById(order);
 
         return R.ok(response);

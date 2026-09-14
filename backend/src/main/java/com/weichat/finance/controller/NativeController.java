@@ -3,6 +3,8 @@ package com.weichat.finance.controller;
 import com.weichat.finance.common.R;
 import com.weichat.finance.entity.MerchantConfig;
 import com.weichat.finance.entity.PayOrder;
+import com.weichat.finance.entity.enums.OrderStatus;
+import com.weichat.finance.entity.enums.ProductType;
 import com.weichat.finance.payment.v3.nativepay.NativeCreateRequest;
 import com.weichat.finance.payment.v3.nativepay.NativeCreateResponse;
 import com.weichat.finance.payment.v3.nativepay.NativeService;
@@ -74,8 +76,8 @@ public class NativeController {
         order.setDescription(request.getDescription());
         order.setAmountTotal(request.getAmountTotal());
         order.setCurrency(request.getCurrency() != null ? request.getCurrency() : "CNY");
-        order.setProductType("NATIVE");
-        order.setStatus("SUBMITTING");
+        order.setProductType(ProductType.NATIVE);
+        order.setStatus(OrderStatus.SUBMITTING);
         order.setAttach(request.getAttach());
         order.setNotifyUrl(merchant.getNotifyUrlBase() + "/notify/v3/pay/success");
         payOrderService.save(order);
@@ -83,7 +85,7 @@ public class NativeController {
 
         NativeCreateResponse response = nativeService.create(request, merchant);
 
-        order.setStatus("CREATED");
+        order.setStatus(OrderStatus.CREATED);
         payOrderService.updateById(order);
         return R.ok(response);
     }

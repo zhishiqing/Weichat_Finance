@@ -3,6 +3,8 @@ package com.weichat.finance.controller;
 import com.weichat.finance.common.R;
 import com.weichat.finance.entity.MerchantConfig;
 import com.weichat.finance.entity.PayOrder;
+import com.weichat.finance.entity.enums.OrderStatus;
+import com.weichat.finance.entity.enums.ProductType;
 import com.weichat.finance.payment.v3.jsapi.JsapiCreateResponse;
 import com.weichat.finance.payment.v3.jsapi.JsapiQueryResponse;
 import com.weichat.finance.payment.v3.jsapi.JsapiService;
@@ -84,8 +86,8 @@ public class JsapiController {
         order.setAmountTotal(request.getAmountTotal());
         order.setCurrency(request.getCurrency() != null ? request.getCurrency() : "CNY");
         order.setOpenid(request.getOpenid());
-        order.setProductType("JSAPI");
-        order.setStatus("SUBMITTING");
+        order.setProductType(ProductType.JSAPI);
+        order.setStatus(OrderStatus.SUBMITTING);
         order.setAttach(request.getAttach());
         order.setNotifyUrl(merchant.getNotifyUrlBase() + "/notify/v3/pay/success");
         payOrderService.save(order);
@@ -93,7 +95,7 @@ public class JsapiController {
 
         JsapiCreateResponse response = jsapiService.create(request, merchant);
 
-        order.setStatus("CREATED");
+        order.setStatus(OrderStatus.CREATED);
         payOrderService.updateById(order);
 
         return R.ok(response);
@@ -140,7 +142,7 @@ public class JsapiController {
         jsapiService.closeByOutTradeNo(outTradeNo, merchant);
 
         // 更新订单状态
-        order.setStatus("CLOSED");
+        order.setStatus(OrderStatus.CLOSED);
         payOrderService.updateById(order);
         log.info("订单状态已更新为 CLOSED: outTradeNo={}", outTradeNo);
         return R.ok();
