@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
  * @author panhw
  * @since 2026-09-14
  */
+@Data
 @TableName("t_pay_transaction")
 public class PayTransaction implements Serializable {
 
@@ -46,29 +48,4 @@ public class PayTransaction implements Serializable {
 
     @TableLogic
     private Integer isDeleted;
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getOutTradeNo() { return outTradeNo; }
-    public void setOutTradeNo(String outTradeNo) { this.outTradeNo = outTradeNo; }
-    public String getTransactionId() { return transactionId; }
-    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
-    public String getMchId() { return mchId; }
-    public void setMchId(String mchId) { this.mchId = mchId; }
-    public String getPayStatus() { return payStatus; }
-    public void setPayStatus(String payStatus) { this.payStatus = payStatus; }
-    public Long getAmountPayerTotal() { return amountPayerTotal; }
-    public void setAmountPayerTotal(Long amountPayerTotal) { this.amountPayerTotal = amountPayerTotal; }
-    public String getBankType() { return bankType; }
-    public void setBankType(String bankType) { this.bankType = bankType; }
-    public LocalDateTime getSuccessTime() { return successTime; }
-    public void setSuccessTime(LocalDateTime successTime) { this.successTime = successTime; }
-    public String getRawResponse() { return rawResponse; }
-    public void setRawResponse(String rawResponse) { this.rawResponse = rawResponse; }
-    public LocalDateTime getGmtCreate() { return gmtCreate; }
-    public void setGmtCreate(LocalDateTime gmtCreate) { this.gmtCreate = gmtCreate; }
-    public LocalDateTime getGmtModified() { return gmtModified; }
-    public void setGmtModified(LocalDateTime gmtModified) { this.gmtModified = gmtModified; }
-    public Integer getIsDeleted() { return isDeleted; }
-    public void setIsDeleted(Integer isDeleted) { this.isDeleted = isDeleted; }
 }
