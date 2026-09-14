@@ -13,6 +13,18 @@
 
 ---
 
+## v0.9 · 2026-09-14
+
+### Refactored · Lombok 修复（实体回归 @Data）
+
+- 移除所有实体类手写的 getter/setter（共 -190 行），统一用 `@Data`
+- **根因**：之前使用 `<source>17` + `<target>17` 导致 Lombok 注解处理器在 Spring Boot 3 + JDK 17 下不生效
+- **修复**：`pom.xml` 改用 `<release>17`（Spring Boot 3 官方推荐）+ 显式 `annotationProcessorPaths`
+- 受影响：6 个实体类（MerchantConfig / PayOrder / PayTransaction / PayRefund / PayNotifyLog / PayIdempotent）
+- **验证**：编译通过 + E2E（健康检查 / JSAPI / 退款）全 PASS
+
+---
+
 ## v0.8 · 2026-09-14
 
 ### Added · Phase 2.1 + Phase 2.2 + Phase 3 + Phase 3.4
