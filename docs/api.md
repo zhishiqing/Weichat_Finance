@@ -528,3 +528,36 @@ docker exec weichat-finance-mysql mysql -uroot -proot -e \
 # 然后重新跑上面的 4 步流程
 ```
 
+---
+
+## 七、API 文档（Knife4j）
+
+### 访问路径
+
+| 类型 | 路径 | 说明 |
+| --- | --- | --- |
+| Knife4j UI（推荐） | `http://localhost:8080/api/doc.html` | 中文界面，支持调试、下载 OpenAPI、搜索 |
+| OpenAPI JSON | `http://localhost:8080/api/v3/api-docs` | 标准 OpenAPI 3 规范 JSON |
+| 原生 Swagger UI | `http://localhost:8080/api/swagger-ui.html` | Knife4j 之外的备用入口 |
+
+### 接口分组（自动生成）
+
+| 分组 | 接口 |
+| --- | --- |
+| **JSAPI 支付** | `/v1/payment/jsapi/create`、`/v1/payment/order/{outTradeNo}`、`/v1/payment/order/{outTradeNo}/close` |
+| **Native 支付** | `/v1/payment/native/create` |
+| **退款管理** | `/v1/payment/refund/create`、`/v1/payment/refund/{outRefundNo}` |
+| **商户配置** | `/v1/merchant/{mchId}` |
+| **健康检查** | `/health` |
+| **微信支付回调** | `/notify/v3/pay/success`、`/notify/v3/refund/success` |
+
+### 调试说明
+
+- 默认 Mock 模式：所有接口调用都会走本地 Mock 实现，零风险
+- 切换 Real 模式：设置环境变量 `WX_PAY_MODE=REAL`，并填入真实商户凭证
+- Knife4j 调试功能：点开任意接口 → 「调试」按钮 → 填入请求参数 → 即可在线发送请求并查看响应
+
+### 生产环境建议
+
+- `knife4j.enable: false` 关闭 Knife4j UI（仅开发/测试环境开放）
+- 通过网关鉴权（Spring Cloud Gateway + JWT / OAuth2）限制 `/doc.html` 访问

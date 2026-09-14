@@ -13,6 +13,31 @@
 
 ---
 
+## v1.1 · 2026-09-14
+
+### Added · 集成 Knife4j 4.5
+
+- 引入 `knife4j-openapi3-jakarta-spring-boot-starter`（Spring Boot 3 专用）
+- 访问路径：
+  - Knife4j UI：http://localhost:8080/api/doc.html
+  - OpenAPI JSON：http://localhost:8080/api/v3/api-docs
+  - 原生 Swagger UI：http://localhost:8080/api/swagger-ui.html
+- 自动生成 5 个接口分组：JSAPI 支付 / Native 支付 / 退款管理 / 商户配置 / 健康检查
+- 中文界面 + 多版本切换 + 实体类 Model 列表
+- **生产环境**：通过 `knife4j.enable: false` 关闭 UI
+
+### Changed
+
+- 5 个 Controller 添加 `@Tag` / `@Operation` / `@Parameter` 注解
+
+### 验证
+
+- 编译通过：62 个文件
+- OpenAPI JSON 含 10 个接口 + 完整 Schema
+- E2E 全 PASS：JSAPI 下单、健康检查
+
+---
+
 ## v1.0 · 2026-09-14
 
 ### Added · 实体字段文档化 + 枚举常量
