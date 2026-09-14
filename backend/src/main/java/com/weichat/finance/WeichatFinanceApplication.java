@@ -3,6 +3,7 @@ package com.weichat.finance;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * 微信支付财务对接系统 · 主程序入口
@@ -15,6 +16,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication
 @MapperScan("com.weichat.finance.mapper")
+@EnableScheduling
 public class WeichatFinanceApplication {
 
     public static void main(String[] args) {

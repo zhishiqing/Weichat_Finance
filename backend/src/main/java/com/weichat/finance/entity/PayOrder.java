@@ -86,6 +86,9 @@ public class PayOrder implements Serializable {
     @Schema(description = "扩展参数（JSON 格式，预留字段）", example = "{\"k\":\"v\"}")
     private String ext;
 
+    @Schema(description = "最近一次定时查单时间（兜底用，避免同一批次重复查）", example = "2026-09-14T12:00:00")
+    private LocalDateTime lastQueryTime;
+
     @Schema(description = "创建时间（MyBatis-Plus 自动填充）", example = "2026-09-14T10:00:00", accessMode = Schema.AccessMode.READ_ONLY)
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime gmtCreate;

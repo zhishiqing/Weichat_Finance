@@ -131,11 +131,16 @@ curl http://localhost:8080/api/health
 
 详见 [docs/changelog.md](docs/changelog.md)。
 
-最新版本：**v0.6**（2026-09-14）
+最新版本：**v1.2**（2026-09-14）
 
 | 日期 | 版本 | 摘要 |
 |---|---|---|
-| 2026-09-14 | v0.7 | **Phase 2：JSAPI 统一下单骨架**：Mock 模式 E2E 打通，引入 wechatpay-java SDK 0.2.12 |
+| 2026-09-14 | v1.2 | **定时查单兜底**：每 30 分钟扫描悬挂订单主动查微信，Flyway V2 + PayOrderQueryScheduler + t_pay_order_query_log |
+| 2026-09-14 | v1.1 | **Knife4j 4.5 集成**：Swagger UI 中文界面 + 实体类 Model 列表 + 5 个接口分组 |
+| 2026-09-14 | v1.0 | 实体字段文档化 + 9 个枚举常量类（避免硬编码字符串） |
+| 2026-09-14 | v0.9 | Lombok 修复：实体回归 @Data（pom 用 `<release>17`） |
+| 2026-09-14 | v0.8 | Phase 2.1 + 2.2 + 3：JSAPI 查单/关单 + Native + 退款 + 回调落库 |
+| 2026-09-14 | v0.7 | **Phase 2：JSAPI 统一下单骨架**：Mock 模式 E2E 打通 |
 | 2026-09-14 | v0.6 | 仓库卫生：清理 target/ + 新增 .gitignore；readme 拆分为 readme + 4 个 docs |
 | 2026-09-14 | v0.5 | Phase 1 骨架：Spring Boot + MyBatis-Plus + Flyway |
 | 2026-09-14 | v0.4 | 数据库 SQL 统一为单脚本 V1 |

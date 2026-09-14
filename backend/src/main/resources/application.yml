@@ -59,6 +59,20 @@ weichat:
     # v1.0 默认直连商户
     default-mch-id: PLACEHOLDER_MCH_ID
 
+# ---- 调度任务配置 ----
+# pay-order-query：定时查单兜底（解决回调丢失导致的悬挂单）
+#   interval-ms：执行间隔（默认 30 分钟）
+#   initial-delay-ms：首次延迟（默认 60 秒，避开启动高峰期）
+#
+# 选择 30 分钟的考虑：
+#   - 微信订单有效期 2 小时，30 分钟兜底足够及时发现问题
+#   - 不会对微信接口造成过大压力
+#   - 如果需要临时验证调度任务，可改为 10000（10 秒）
+scheduler:
+  pay-order-query:
+    interval-ms: 1800000        # 30 分钟（生产环境）
+    initial-delay-ms: 60000     # 60 秒
+
 # ---- Knife4j / Swagger 增强配置 ----
 # Spring Boot 3 + Jakarta EE 9 适配
 knife4j:

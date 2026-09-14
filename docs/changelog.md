@@ -13,6 +13,61 @@
 
 ---
 
+## v1.2 · 2026-09-14
+
+### Added · 定时查单兜底（解决回调丢失/失败导致的订单悬挂）
+
+**问题场景**：
+- 微信支付回调可能因网络/系统问题丢失或失败
+- 历史上发生过订单已支付但 t_pay_order.status 永远停留在 CREATED，导致用户看不到支付成功
+- 主动查单兜底是微信官方推荐的兜底方案（每 30 分钟调用一次 `GET /v3/pay/transactions/out-trade-no/{out_trade_no}`）
+
+**实现**：
+- 主程序入口加 `@EnableScheduling`
+- 新增 `PayOrderQueryScheduler`（`com.weichat.finance.job`），默认每 30 分钟执行一次
+- 新增 Flyway V2 迁移脚本：
+  - `t_pay_order.last_query_time`：最近一次查单时间（避免同批次重复查）
+  - `t_pay_order_query_log`：每次批次的执行日志（笔数/耗时/异常统计）
+- 新增 `PayOrderQueryLog` 实体 + Mapper + Service
+- `PayOrderService.listHangingOrders()`：扫描 status IN (CREATED, SUBMITTING) 且 last_query_time 已过期/为空的订单
+- `PayTransactionService.updateByOutTradeNo()`：按 out_trade_no 更新交易流水
+- `application.yml` 加 `scheduler.pay-order-query.interval-ms / initial-delay-ms` 配置项
+
+**执行流程**：
+1. 扫描 t_pay_order 中悬挂的未支付订单
+2. 调用 JsapiService.queryByOutTradeNo() 查微信侧状态
+3. 状态变化时同步更新 t_pay_order + t_pay_transaction
+4. 无论状态是否变化，都更新 last_query_time（防止本批次重复查）
+5. 记录执行日志到 t_pay_order_query_log
+
+**健壮性**：
+- 指数退避重试：查单失败 1s → 2s → 4s 最多 3 次
+- 分批处理：每批 100 条，避免长时间锁表
+- MOCK 模式：只打日志 + 写日志表，不调用微信，便于本地验证
+
+**配置项**（生产 30 分钟 / 本地验证 10 秒）：
+
+```yaml
+scheduler:
+  pay-order-query:
+    interval-ms: 1800000        # 30 分钟
+    initial-delay-ms: 60000     # 60 秒
+```
+
+### Changed
+
+- `PayOrder` 实体增加 `lastQueryTime` 字段
+- `PayOrderService` 接口增加 `listHangingOrders(...)` 方法
+
+### 验证
+
+- Flyway V2 自动迁移成功（V2 记录已写入 flyway_schema_history）
+- MOCK 模式调度任务运行：扫描到 4 笔历史 CREATED 订单，正确写入 t_pay_order_query_log
+- 编译通过：65 个 .java
+- E2E 全 PASS：健康检查 + 商户配置
+
+---
+
 ## v1.1 · 2026-09-14
 
 ### Added · 集成 Knife4j 4.5
