@@ -13,6 +13,82 @@
 
 ---
 
+## v1.3 · 2026-09-15
+
+### Added · MDC traceId 日志串联 + 对账模块
+
+#### 1. MDC traceId 日志串联（🟠 建议 · 已完成）
+
+**解决问题**：跨线程/跨调用栈的日志无法串联，排障困难。
+
+**实现**：
+- `MdcTraceIdFilter`：HTTP 请求入口，生成/接收 traceId 写入 MDC
+  - **优先级**：X-Trace-Id 头（业务调用方） → Request-Id 头（微信回调） → 自动生成
+  - **响应头**：X-Trace-Id 透传给客户端
+- `MdcTaskDecorator`：Spring 异步线程池继承父线程 MDC（`@Async` 自动生效）
+- `ScheduledTaskMdcHelper`：调度任务生成独立 traceId（每次执行唯一）
+- `AsyncConfig`：自定义 `taskExecutor` 线程池（8 核心 / 32 最大 / 500 队列 / 60s keepalive）
+- logback pattern 加 `%X{traceId:-}` 占位
+
+**日志格式示例**：
+```
+2026-09-15 14:30:00 INFO [http-nio-8080-exec-1] [HTTP_my-test-trace-001] c.w.f.controller.JsapiController - 收到下单请求
+2026-09-15 14:30:00 INFO [http-nio-8080-exec-1] [HTTP_my-test-trace-001] c.w.f.service.PayOrderService - 落库成功
+2026-09-15 14:30:00 INFO [scheduling-1] [SCHED_payOrderQuery_a1b2c3d4] c.w.f.job.PayOrderQueryScheduler - 批次扫描开始
+2026-09-15 14:30:00 INFO [async-1] [HTTP_my-test-trace-001] c.w.f.service.AsyncTask - 异步任务继承 traceId
+```
+
+#### 2. 对账模块（🟡 Phase 4 · 已完成）
+
+**解决问题**：本地订单与微信账单可能不一致（回调丢失/重放/金额差异），人工对账效率低。
+
+**实现**：
+- Flyway V3：`t_pay_reconciliation_diff` 表（每笔差异明细）
+- `Reconciliation` / `ReconciliationDiff` 实体 + Mapper + Service
+- `WechatBillDownloader`：账单下载器
+  - **Mock 模式**：生成 gzip CSV（3 笔示例交易）
+  - **Real 模式**：调用 `GET /v3/billdownload/file`（v1.x 待激活）
+  - **本地存储**：`{user.home}/weichat-finance/bill/{yyyy-MM-dd}_{billType}.gz`
+- `ReconciliationExecutor`：对账执行核心
+  - 幂等：同一商户+日期+类型已 SUCCESS 则跳过
+  - 失败重试：FAILED 状态自动覆盖
+  - `@Transactional` 保证原子性
+  - **解析策略**：动态解析 CSV 表头映射字段索引，兼容微信账单字段变化
+- `ReconciliationDiffAnalyzer`：差异分析
+  - 4 种差异类型：LOCAL_ONLY / WECHAT_ONLY / AMOUNT_DIFF / STATUS_DIFF
+  - 主键对比：outTradeNo
+- `ReconciliationScheduler`：每日 03:00 执行对账（cron 可配）
+- `ReconciliationController`：管理后台接口
+  - `POST /api/v1/admin/reconciliation/trigger` 手动触发
+  - `GET /api/v1/admin/reconciliation/list` 汇总列表
+  - `GET /api/v1/admin/reconciliation/{id}` 汇总详情
+  - `GET /api/v1/admin/reconciliation/{id}/diffs` 差异明细
+
+**验证情况**：
+
+| 场景 | 结果 |
+|---|---|
+| HTTP 请求 traceId 串联（X-Trace-Id 透传） | ✅ 响应头 X-Trace-Id 回传 |
+| 调度任务 traceId（独立生成） | ✅ 每次调度不同 traceId |
+| 微信回调 Request-Id 沿用 | ✅ 代码已实现（待真实回调验证） |
+| 手动触发对账（Mock） | ✅ 解析 3 笔交易 + 3 笔 WECHAT_ONLY 差异 |
+| 幂等：重复对账同一日期 | ✅ 已 SUCCESS 则跳过 |
+| Flyway V3 自动迁移 | ✅ t_pay_reconciliation_diff 表创建成功 |
+| 差异明细写入 | ✅ 写入 DB 并可通过 API 查询 |
+
+### 已知 Limitations
+
+- Real 模式下 `WechatBillDownloader.downloadReal()` 仍占位，需真实 SDK 激活
+- 对账差异目前仅生成 PENDING 记录，待补"自动修复"或"批量处理"功能
+
+### 变更
+
+- 13 个新文件（trace / reconciliation 模块）
+- 1 个 Flyway V3 迁移
+- application.yml 新增 3 个 scheduler / 1 个 trace 配置项
+
+---
+
 ## v1.2 · 2026-09-14
 
 ### Added · 定时查单兜底（解决回调丢失/失败导致的订单悬挂）

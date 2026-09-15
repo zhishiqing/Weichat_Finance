@@ -131,10 +131,11 @@ curl http://localhost:8080/api/health
 
 详见 [docs/changelog.md](docs/changelog.md)。
 
-最新版本：**v1.2**（2026-09-14）
+最新版本：**v1.3**（2026-09-15）
 
 | 日期 | 版本 | 摘要 |
 |---|---|---|
+| 2026-09-15 | v1.3 | **MDC traceId 日志串联** + **对账模块**：X-Trace-Id 透传 + 异步线程池继承 MDC + 调度任务独立 traceId + 每日 03:00 自动对账 |
 | 2026-09-14 | v1.2 | **定时查单兜底**：每 30 分钟扫描悬挂订单主动查微信，Flyway V2 + PayOrderQueryScheduler + t_pay_order_query_log |
 | 2026-09-14 | v1.1 | **Knife4j 4.5 集成**：Swagger UI 中文界面 + 实体类 Model 列表 + 5 个接口分组 |
 | 2026-09-14 | v1.0 | 实体字段文档化 + 9 个枚举常量类（避免硬编码字符串） |

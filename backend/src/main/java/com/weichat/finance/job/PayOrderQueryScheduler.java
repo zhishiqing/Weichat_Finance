@@ -10,6 +10,7 @@ import com.weichat.finance.payment.v3.jsapi.JsapiService;
 import com.weichat.finance.service.PayOrderQueryLogService;
 import com.weichat.finance.service.PayOrderService;
 import com.weichat.finance.service.PayTransactionService;
+import com.weichat.finance.trace.ScheduledTaskMdcHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,6 +92,20 @@ public class PayOrderQueryScheduler {
     @Scheduled(fixedRateString = "${scheduler.pay-order-query.interval-ms:1800000}",
                initialDelayString = "${scheduler.pay-order-query.initial-delay-ms:60000}")
     public void queryPendingOrders() {
+        // 绑定 traceId 到 MDC，便于串联本次任务所有日志
+        String traceId = ScheduledTaskMdcHelper.startScheduledTask("payOrderQuery");
+        try {
+            doQueryPendingOrders();
+        } finally {
+            // 清理 MDC（scheduling-1 是单线程复用，不清理会串扰下一任务）
+            ScheduledTaskMdcHelper.endScheduledTask();
+        }
+    }
+
+    /**
+     * 实际查单逻辑（拆出来便于 try/finally 包裹）。
+     */
+    private void doQueryPendingOrders() {
         LocalDateTime now = LocalDateTime.now();
         String batchNo = now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
             + "_" + String.format("%04d", (int) (Math.random() * 10000));

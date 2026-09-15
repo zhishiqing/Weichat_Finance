@@ -51,7 +51,10 @@ logging:
     com.weichat.finance: DEBUG
     com.baomidou.mybatisplus: INFO
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+    # 日志格式：[时间] [级别] [线程] [traceId] [类名] - 消息
+    #   %X{traceId:-}：从 MDC 取 traceId，没有则输出 -（避免日志模板异常）
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId:-}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId:-}] %logger{36} - %msg%n"
 
 # ---- 自定义业务配置（占位）----
 weichat:
@@ -72,6 +75,8 @@ scheduler:
   pay-order-query:
     interval-ms: 1800000        # 30 分钟（生产环境）
     initial-delay-ms: 60000     # 60 秒
+  reconciliation:
+    cron: "0 0 3 * * ?"         # 每日 03:00 执行对账（避开次日 04:00 前账单未生成）
 
 # ---- Knife4j / Swagger 增强配置 ----
 # Spring Boot 3 + Jakarta EE 9 适配
