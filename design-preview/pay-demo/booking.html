@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>创建订单 · 微信支付 Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page { max-width: 80rem; margin: 0 auto; padding: var(--space-4) var(--space-3); }
+.breadcrumb { font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-3); }
+.breadcrumb a { color: var(--green-accent); }
+
+.layout { display: grid; grid-template-columns: 1fr 32rem; gap: var(--space-4); }
+
+.section-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); margin-bottom: var(--space-3); }
+.section-title { font-size: 1.6rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--ceramic); display: flex; align-items: center; gap: var(--space-2); }
+.section-num { width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--green-accent); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; }
+
+.product-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.type-card {
+  padding: var(--space-3);
+  border: 2px solid var(--ceramic);
+  border-radius: var(--card-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.type-card:hover { border-color: var(--green-accent); }
+.type-card.active { border-color: var(--green-accent); background: linear-gradient(135deg, var(--white) 0%, var(--green-light) 100%); }
+.type-card-icon { font-size: 2.4rem; margin-bottom: var(--space-1); }
+.type-card-name { font-size: 1.6rem; font-weight: 600; color: var(--text-black); }
+.type-card-desc { font-size: 1.2rem; color: var(--text-black-soft); margin-top: 0.2rem; }
+
+.amount-quick { display: flex; gap: var(--space-1); flex-wrap: wrap; margin-top: var(--space-2); }
+.amount-chip {
+  padding: 0.4rem 1.2rem;
+  background: var(--neutral-cool);
+  color: var(--text-black);
+  border-radius: var(--chip-radius);
+  font-size: 1.3rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.amount-chip:hover { background: var(--green-light); border-color: var(--green-accent); }
+
+.summary-card { position: sticky; top: 9.2rem; height: fit-content; }
+.summary-row { display: flex; justify-content: space-between; padding: 0.6rem 0; font-size: 1.4rem; }
+.summary-row.total { border-top: 1px solid var(--ceramic); margin-top: var(--space-2); padding-top: var(--space-3); font-size: 1.6rem; font-weight: 700; }
+.summary-row.total .price { color: var(--starbucks-green); font-size: 2.2rem; }
+
+.api-preview {
+  background: var(--neutral-cool);
+  padding: var(--space-3);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  color: var(--text-black);
+  max-height: 30rem;
+  overflow: auto;
+}
+.api-preview .key { color: var(--green-accent); }
+.api-preview .str { color: #c82014; }
+
+@media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } .summary-card { position: static; } }
+@media (max-width: 768px) { .product-type-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+  <div class="breadcrumb">
+    <a href="index.html">收银台</a> / <span>创建订单</span>
+  </div>
+
+  <div class="layout">
+    <div>
+      <!-- 1. 产品类型 -->
+      <div class="section-card">
+        <h2 class="section-title"><span class="section-num">1</span>支付方式</h2>
+        <div class="product-type-grid" id="typeGrid">
+          <div class="type-card active" data-type="JSAPI" onclick="selectType(this, 'JSAPI')">
+            <div class="type-card-icon">💚</div>
+            <div class="type-card-name">JSAPI 支付</div>
+            <div class="type-card-desc">微信内浏览器支付（公众号/小程序）</div>
+          </div>
+          <div class="type-card" data-type="NATIVE" onclick="selectType(this, 'NATIVE')">
+            <div class="type-card-icon">📱</div>
+            <div class="type-card-name">Native 支付</div>
+            <div class="type-card-desc">扫码支付（PC 网站/线下二维码）</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 商户 -->
+      <div class="section-card">
+        <h2 class="section-title"><span class="section-num">2</span>商户信息</h2>
+        <div id="merchantInfo" class="text-soft">加载中...</div>
+      </div>
+
+      <!-- 3. 商品 + 金额 -->
+      <div class="section-card">
+        <h2 class="section-title"><span class="section-num">3</span>商品与金额</h2>
+        <div class="form-group">
+          <input type="text" class="form-input" id="description" placeholder=" " value="测试商品" required>
+          <label class="form-label">商品描述 (description)</label>
+        </div>
+        <div class="form-group">
+          <input type="number" class="form-input" id="amountYuan" placeholder=" " value="0.01" step="0.01" min="0.01" required>
+          <label class="form-label">订单金额 (元) · 后端按"分"计算</label>
+        </div>
+        <div class="amount-quick">
+          <span class="amount-chip" onclick="setAmount(0.01)">¥0.01</span>
+          <span class="amount-chip" onclick="setAmount(0.1)">¥0.10</span>
+          <span class="amount-chip" onclick="setAmount(1)">¥1.00</span>
+          <span class="amount-chip" onclick="setAmount(10)">¥10.00</span>
+          <span class="amount-chip" onclick="setAmount(99)">¥99.00</span>
+          <span class="amount-chip" onclick="setAmount(199)">¥199.00</span>
+          <span class="amount-chip" onclick="setAmount(888)">¥888.00</span>
+        </div>
+      </div>
+
+      <!-- 4. 用户标识 -->
+      <div class="section-card" id="jsapiOnly">
+        <h2 class="section-title"><span class="section-num">4</span>用户标识 (JSAPI 必填)</h2>
+        <div class="form-group">
+          <input type="text" class="form-input" id="openid" placeholder=" " value="oUpF8uMuAxxxxxxxxxxxxxxxxxx" required>
+          <label class="form-label">用户 OpenID</label>
+        </div>
+        <div class="text-sm text-soft">演示用 OpenID，实际场景由微信授权获取</div>
+      </div>
+
+      <!-- 5. 附加数据 -->
+      <div class="section-card">
+        <h2 class="section-title"><span class="section-num" id="step-num">5</span>附加数据 (可选)</h2>
+        <div class="form-group">
+          <input type="text" class="form-input" id="attach" placeholder=" ">
+          <label class="form-label">附加数据 (attach) · 回调时原样返回</label>
+        </div>
+        <div class="form-group">
+          <input type="text" class="form-input" id="outTradeNo" placeholder=" ">
+          <label class="form-label">商户订单号 (可选，自动生成 UUID)</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧：摘要 + API 请求预览 -->
+    <aside>
+      <div class="card summary-card">
+        <div style="padding:var(--space-4);">
+          <div class="summary-row"><span>商品</span><span id="sum-desc" class="text-sm">-</span></div>
+          <div class="summary-row"><span>支付方式</span><span id="sum-type">JSAPI</span></div>
+          <div class="summary-row"><span>商户号</span><span id="sum-mch" class="text-sm mono">-</span></div>
+          <div class="summary-row total"><span>应付金额</span><span class="price">¥<span id="sum-amount">0.01</span></span></div>
+
+          <button class="btn-primary btn-block btn-lg mt-3" onclick="submitOrder()">🚀 提交订单</button>
+          <div class="text-xs text-soft text-center mt-2" id="api-status">点击提交即调用后端 API</div>
+
+          <details style="margin-top: var(--space-3);">
+            <summary style="font-size: 1.3rem; color: var(--text-black-soft); cursor: pointer;">📋 请求预览 (JSON)</summary>
+            <pre class="api-preview mt-2" id="reqPreview">{}</pre>
+          </details>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/api.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon();
+
+let productType = 'JSAPI';
+let merchant = null;
+
+// 初始化商户
+(async function init() {
+  const mchId = URL.get('mchId') || sessionStorage.getItem('selected_mch_id');
+  try {
+    const { data } = await API.getMerchant(mchId || 'PLACEHOLDER_MCH_ID');
+    // 真实查询失败时回退到 1674723182
+    let usedMch = data.mchId;
+    if (!data || data.code === 404 || !usedMch) {
+      const r = await API.getMerchant('1674723182').catch(() => ({ data: null }));
+      if (r.data) { merchant = r.data; usedMch = r.data.mchId; }
+    } else {
+      merchant = data;
+    }
+  } catch (e) {
+    try {
+      const r = await API.getMerchant('1674723182');
+      merchant = r.data;
+    } catch (e2) {}
+  }
+  if (merchant) {
+    document.getElementById('merchantInfo').innerHTML = `
+      <div style="display:flex;align-items:center;gap:var(--space-3);">
+        <div style="width:4.8rem;height:4.8rem;border-radius:50%;background:var(--green-accent);color:var(--white);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.6rem;">${merchant.merchantName?.slice(0,1) || merchant.mchId.slice(0,1)}</div>
+        <div>
+          <div style="font-size:1.6rem;font-weight:600;color:var(--text-black);">${merchant.merchantName}</div>
+          <div style="font-size:1.3rem;color:var(--text-black-soft);font-family:'JetBrains Mono',monospace;">${merchant.mchId} · ${merchant.appId}</div>
+        </div>
+      </div>
+    `;
+    document.getElementById('sum-mch').textContent = merchant.mchId;
+  }
+
+  // URL 参数 type
+  const typeParam = URL.get('type');
+  if (typeParam === 'native') selectType(document.querySelector('[data-type="NATIVE"]'), 'NATIVE');
+})();
+
+function selectType(el, type) {
+  productType = type.toUpperCase();
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sum-type').textContent = productType;
+  document.getElementById('jsapiOnly').style.display = productType === 'JSAPI' ? 'block' : 'none';
+  document.getElementById('step-num').textContent = productType === 'JSAPI' ? '5' : '4';
+  updatePreview();
+}
+
+function setAmount(v) {
+  document.getElementById('amountYuan').value = v;
+  updatePreview();
+}
+
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+function buildRequest() {
+  const description = document.getElementById('description').value.trim() || '测试商品';
+  const amountYuan = parseFloat(document.getElementById('amountYuan').value) || 0.01;
+  const amountTotal = Math.round(amountYuan * 100);
+  const openid = productType === 'JSAPI' ? document.getElementById('openid').value.trim() : undefined;
+  const attach = document.getElementById('attach').value.trim();
+  const outTradeNo = document.getElementById('outTradeNo').value.trim() || uuid();
+
+  return { outTradeNo, description, amountTotal, openid, attach };
+}
+
+function updatePreview() {
+  const req = buildRequest();
+  document.getElementById('sum-desc').textContent = req.description;
+  document.getElementById('sum-amount').textContent = (req.amountTotal / 100).toFixed(2);
+  document.getElementById('reqPreview').textContent = JSON.stringify(req, null, 2);
+}
+
+['description', 'amountYuan', 'openid', 'attach', 'outTradeNo'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updatePreview);
+});
+
+async function submitOrder() {
+  const req = buildRequest();
+
+  if (!merchant) { toast('商户加载失败'); return; }
+  if (productType === 'JSAPI' && !req.openid) { toast('JSAPI 必须填 openid'); return; }
+  if (req.amountTotal <= 0) { toast('金额必须大于 0'); return; }
+
+  const btn = document.querySelector('.btn-primary.btn-block');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+  document.getElementById('api-status').textContent = '📡 调用后端 API 中...';
+
+  try {
+    let res;
+    if (productType === 'JSAPI') {
+      res = await API.createJsapiOrder(req);
+      toast(`✅ JSAPI 订单创建成功`);
+    } else {
+      res = await API.createNativeOrder(req);
+      toast(`✅ Native 订单创建成功`);
+    }
+
+    Store.setOrder({
+      outTradeNo: req.outTradeNo,
+      productType,
+      mchId: merchant.mchId,
+      appId: merchant.appId,
+      description: req.description,
+      amountTotal: req.amountTotal,
+      openid: req.openid,
+      attach: req.attach,
+      traceId: res.traceId,
+      createTime: new Date().toISOString(),
+      apiResponse: res.data,
+    });
+
+    document.getElementById('api-status').innerHTML = `✅ 创建成功 · traceId: <code style="font-family:monospace;color:var(--green-accent);">${res.traceId}</code>`;
+
+    setTimeout(() => {
+      sessionStorage.setItem('last_query_otn', req.outTradeNo);
+      location.href = `payment.html?otn=${req.outTradeNo}&type=${productType}`;
+    }, 800);
+  } catch (e) {
+    document.getElementById('api-status').innerHTML = `❌ 调用失败 · ${e.message}`;
+    btn.disabled = false;
+    btn.textContent = '🚀 提交订单';
+  }
+}
+
+updatePreview();
+</script>
+
+</body>
+</html>

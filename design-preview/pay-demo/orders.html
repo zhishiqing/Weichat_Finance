@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交易记录 · 微信支付 Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page { max-width: 96rem; margin: 0 auto; padding: var(--space-4) var(--space-3); }
+.page-title { font-size: 2.6rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-4); }
+.tabs-bar {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: 0 var(--space-4);
+  display: flex;
+  gap: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+.tab-item { padding: var(--space-3) 0; font-size: 1.5rem; font-weight: 500; color: var(--text-black-soft); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s ease; }
+.tab-item.active { color: var(--starbucks-green); border-bottom-color: var(--starbucks-green); font-weight: 600; }
+.tab-item .badge { display: inline-block; background: var(--green-light); color: var(--starbucks-green); padding: 2px 8px; border-radius: 10px; font-size: 1.1rem; margin-left: 4px; font-weight: 600; }
+
+.order-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.order-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); cursor: pointer; transition: all 0.2s ease; }
+.order-card:hover { transform: translateY(-2px); box-shadow: var(--hover-shadow); }
+.order-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-2); margin-bottom: var(--space-3); border-bottom: 1px solid var(--ceramic); }
+.order-id { font-size: 1.2rem; color: var(--text-black-soft); font-family: 'JetBrains Mono', monospace; }
+.order-status { font-size: 1.3rem; font-weight: 600; padding: 0.4rem 1rem; border-radius: var(--chip-radius); }
+.status-PAID, .status-SUCCESS { background: var(--green-accent); color: #fff; }
+.status-SUBMITTING, .status-CREATED, .status-NOTPAY { background: var(--yellow); color: var(--text-black); }
+.status-CLOSED, .status-EXPIRED, .status-CANCELLED { background: var(--neutral-cool); color: var(--text-black-soft); }
+.status-REFUND, .status-REFUNDED { background: var(--gold); color: #fff; }
+
+.order-body { margin-bottom: var(--space-3); }
+.order-desc { font-size: 1.7rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-1); }
+.order-meta { font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-1); font-family: 'JetBrains Mono', monospace; }
+.order-amount { font-size: 2rem; font-weight: 700; color: var(--starbucks-green); }
+.order-footer { display: flex; justify-content: space-between; align-items: end; padding-top: var(--space-3); border-top: 1px solid var(--ceramic); }
+.order-source { padding: 0.2rem 0.8rem; background: var(--green-light); color: var(--starbucks-green); border-radius: 4px; font-size: 1.1rem; font-weight: 500; }
+.order-actions { display: flex; gap: var(--space-2); }
+
+.empty-state { padding: var(--space-7) var(--space-3); text-align: center; color: var(--text-black-soft); }
+.empty-state .emoji { font-size: 5rem; margin-bottom: var(--space-3); opacity: 0.5; }
+.empty-state .text { font-size: 1.6rem; margin-bottom: var(--space-4); }
+
+@media (max-width: 768px) {
+  .order-footer { flex-direction: column; gap: var(--space-3); align-items: stretch; }
+  .order-actions { justify-content: stretch; }
+  .order-actions button { flex: 1; }
+}
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+  <h1 class="page-title">交易记录</h1>
+
+  <div class="tabs-bar">
+    <div class="tab-item active" data-tab="all" onclick="switchTab('all')">全部 <span class="badge" id="badge-all">0</span></div>
+    <div class="tab-item" data-tab="pending" onclick="switchTab('pending')">待支付 <span class="badge" id="badge-pending">0</span></div>
+    <div class="tab-item" data-tab="paid" onclick="switchTab('paid')">已支付 <span class="badge" id="badge-paid">0</span></div>
+    <div class="tab-item" data-tab="closed" onclick="switchTab('closed')">已关闭 <span class="badge" id="badge-closed">0</span></div>
+    <div class="tab-item" data-tab="refund" onclick="switchTab('refund')">退款 <span class="badge" id="badge-refund">0</span></div>
+  </div>
+
+  <div id="orderList"></div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/api.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon('orders');
+
+let currentTab = 'all';
+
+const statusText = {
+  SUBMITTING: '提交中', CREATED: '已创建', NOTPAY: '待支付',
+  PAID: '已支付', SUCCESS: '已完成', CLOSED: '已关闭',
+  REFUND: '退款中', REFUNDED: '已退款', CANCELLED: '已取消', EXPIRED: '已超时',
+};
+
+const filterMap = {
+  all: null,
+  pending: ['SUBMITTING', 'CREATED', 'NOTPAY'],
+  paid: ['PAID', 'SUCCESS'],
+  closed: ['CLOSED', 'CANCELLED', 'EXPIRED'],
+  refund: ['REFUND', 'REFUNDED'],
+};
+
+async function refresh() {
+  // 本地缓存 + 调后端刷新
+  const cached = Store.listOrders();
+  const enriched = await Promise.all(cached.map(async (o) => {
+    try {
+      const { data } = await API.queryOrder(o.outTradeNo);
+      return { ...o, payStatus: data.payStatus || data.status, _live: data };
+    } catch (e) {
+      return { ...o, payStatus: o.payStatus || 'NOTPAY' };
+    }
+  }));
+  Store.save(enriched.map(({ _live, ...rest }) => rest));
+  render(enriched);
+}
+
+function render(list) {
+  ['all', 'pending', 'paid', 'closed', 'refund'].forEach(t => {
+    const cnt = filterMap[t] ? list.filter(o => filterMap[t].includes(o.payStatus || o.status || 'NOTPAY')).length : list.length;
+    document.getElementById('badge-' + t).textContent = cnt;
+  });
+
+  const filtered = filterMap[currentTab] ? list.filter(o => filterMap[currentTab].includes(o.payStatus || o.status || 'NOTPAY')) : list;
+
+  if (filtered.length === 0) {
+    document.getElementById('orderList').innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">📭</div>
+        <div class="text">${currentTab === 'all' ? '暂无交易记录' : '此分类下暂无记录'}</div>
+        <button class="btn-primary" onclick="location.href='booking.html'">去下单</button>
+      </div>
+    `;
+    return;
+  }
+
+  document.getElementById('orderList').innerHTML = filtered.map(o => {
+    const st = o.payStatus || o.status || 'NOTPAY';
+    return `
+      <div class="order-card" onclick="location.href='detail.html?otn=${o.outTradeNo}'">
+        <div class="order-header">
+          <div class="order-id">${o.outTradeNo}</div>
+          <span class="order-status status-${st}">${statusText[st] || st}</span>
+        </div>
+        <div class="order-body">
+          <div class="order-desc">${o.description || '未命名商品'}</div>
+          <div class="order-meta">${o.productType || 'JSAPI'} · ${o.mchId}</div>
+          <div style="display:flex; gap:var(--space-3); align-items:baseline; margin-top:var(--space-1);">
+            <span class="order-amount">¥${(o.amountTotal / 100).toFixed(2)}</span>
+            <span class="order-source">${o.apiResponse?.source || 'MOCK'}</span>
+          </div>
+        </div>
+        <div class="order-footer">
+          <div class="text-sm text-soft">${new Date(o.createTime).toLocaleString()}</div>
+          <div class="order-actions" onclick="event.stopPropagation()">
+            <button class="btn-ghost btn-sm" onclick="location.href='detail.html?otn=${o.outTradeNo}'">详情</button>
+            ${['SUBMITTING', 'CREATED', 'NOTPAY'].includes(st) ? `<button class="btn-primary btn-sm" onclick="location.href='payment.html?otn=${o.outTradeNo}&type=${o.productType}'">去支付</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function switchTab(t) {
+  currentTab = t;
+  document.querySelectorAll('.tab-item').forEach(el => el.classList.toggle('active', el.dataset.tab === t));
+  refresh();
+}
+
+refresh();
+</script>
+
+</body>
+</html>

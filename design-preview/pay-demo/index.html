@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>微信支付 Demo · 收银台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.hero {
+  background: linear-gradient(135deg, var(--house-green) 0%, var(--green-uplift) 100%);
+  color: var(--text-white);
+  padding: var(--space-7) var(--space-3) var(--space-5);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -40%; left: -10%;
+  width: 50rem; height: 50rem;
+  background: radial-gradient(circle, rgba(0,117,74,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-tag {
+  display: inline-block;
+  padding: 0.4rem 1.2rem;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: var(--button-radius);
+  color: var(--text-white);
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: var(--space-3);
+  backdrop-filter: blur(8px);
+  position: relative;
+}
+.hero-title {
+  font-size: 4rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: var(--space-2);
+  line-height: 1.2;
+  position: relative;
+}
+.hero-subtitle {
+  font-size: 1.6rem;
+  color: var(--text-white-soft);
+  margin-bottom: var(--space-3);
+  position: relative;
+}
+
+.health-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.4rem 1.2rem;
+  background: rgba(212, 233, 226, 0.15);
+  border: 1px solid var(--green-light);
+  border-radius: var(--button-radius);
+  font-size: 1.2rem;
+  color: var(--text-white);
+  position: relative;
+}
+.health-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--green-light);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 50% { opacity: 0.5; } }
+
+.section { padding: var(--space-5) var(--space-3); max-width: 110rem; margin: 0 auto; }
+.section-title { font-size: 2.2rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-2); }
+.section-subtitle { font-size: 1.4rem; color: var(--text-black-soft); margin-bottom: var(--space-4); }
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.action-card {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--space-4);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.action-card:hover { transform: translateY(-4px); box-shadow: var(--hover-shadow); }
+.action-card:active { transform: scale(0.97); }
+.action-icon {
+  width: 5.6rem; height: 5.6rem;
+  margin: 0 auto var(--space-2);
+  border-radius: 50%;
+  background: var(--green-light);
+  color: var(--starbucks-green);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.4rem;
+}
+.action-name { font-size: 1.6rem; font-weight: 600; color: var(--text-black); margin-bottom: 0.4rem; }
+.action-desc { font-size: 1.2rem; color: var(--text-black-soft); }
+
+.merchant-list {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+.merchant-row {
+  display: flex; align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--ceramic);
+  transition: background 0.2s ease;
+}
+.merchant-row:last-child { border-bottom: none; }
+.merchant-row:hover { background: var(--neutral-cool); }
+.merchant-avatar {
+  width: 4.8rem; height: 4.8rem;
+  border-radius: 50%;
+  background: var(--green-accent);
+  color: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 1.6rem;
+  margin-right: var(--space-3);
+  flex-shrink: 0;
+}
+.merchant-info { flex: 1; }
+.merchant-name { font-size: 1.6rem; font-weight: 600; color: var(--text-black); margin-bottom: 0.2rem; }
+.merchant-id { font-size: 1.2rem; color: var(--text-black-soft); font-family: 'JetBrains Mono', monospace; }
+.merchant-status {
+  padding: 0.3rem 1rem;
+  background: var(--green-light);
+  color: var(--starbucks-green);
+  border-radius: var(--chip-radius);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-right: var(--space-2);
+}
+
+.api-summary {
+  background: linear-gradient(135deg, var(--gold-lightest) 0%, var(--gold-light) 100%);
+  border: 1px dashed var(--gold);
+  border-radius: var(--card-radius);
+  padding: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.api-title { font-size: 1.6rem; font-weight: 600; color: var(--starbucks-green); margin-bottom: var(--space-2); }
+.api-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+.api-stat { padding: var(--space-3); background: var(--white); border-radius: 8px; text-align: center; }
+.api-stat-num { font-size: 2.4rem; font-weight: 700; color: var(--starbucks-green); }
+.api-stat-label { font-size: 1.2rem; color: var(--text-black-soft); margin-top: 0.4rem; }
+
+@media (max-width: 768px) {
+  .action-grid, .api-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-title { font-size: 2.8rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<!-- Hero -->
+<section class="hero">
+  <span class="hero-tag">💚 WeChat Pay Demo · 联调前后端</span>
+  <h1 class="hero-title">微信支付收银台</h1>
+  <p class="hero-subtitle">基于真实后端 API 的联调环境 · 支持 JSAPI / Native / 退款全链路</p>
+  <div style="position:relative">
+    <span class="health-pill">
+      <span class="health-dot" id="healthDot"></span>
+      <span id="healthText">健康检查中...</span>
+    </span>
+  </div>
+</section>
+
+  <!-- API 概览 -->
+  <div class="section">
+    <div class="api-summary">
+      <div class="api-title">📊 后端 API 实时状态 <span style="font-size:1.3rem;font-weight:400;color:var(--text-black-soft);" id="modeBadge">加载中...</span></div>
+      <div class="api-grid">
+        <div class="api-stat"><div class="api-stat-num" id="stat-orders">--</div><div class="api-stat-label">已落库订单</div></div>
+        <div class="api-stat"><div class="api-stat-num" id="stat-merchants">--</div><div class="api-stat-label">启用商户</div></div>
+        <div class="api-stat"><div class="api-stat-num" id="stat-paymode">MOCK</div><div class="api-stat-label">支付模式</div></div>
+      </div>
+    </div>
+  </div>
+
+<!-- 快捷操作 -->
+<section class="section">
+  <h2 class="section-title">快捷操作</h2>
+  <p class="section-subtitle">点击卡片开始联调，5 步走完下单支付全链路</p>
+  <div class="action-grid">
+    <div class="action-card" onclick="location.href='booking.html?type=jsapi'">
+      <div class="action-icon">💚</div>
+      <div class="action-name">JSAPI 下单</div>
+      <div class="action-desc">微信内浏览器支付</div>
+    </div>
+    <div class="action-card" onclick="location.href='booking.html?type=native'">
+      <div class="action-icon">📱</div>
+      <div class="action-name">Native 下单</div>
+      <div class="action-desc">扫码支付</div>
+    </div>
+    <div class="action-card" onclick="location.href='orders.html'">
+      <div class="action-icon">📋</div>
+      <div class="action-name">交易记录</div>
+      <div class="action-desc">查看所有订单</div>
+    </div>
+    <div class="action-card" onclick="location.href='me.html'">
+      <div class="action-icon">🔧</div>
+      <div class="action-name">API 工具</div>
+      <div class="action-desc">traceId 调试</div>
+    </div>
+  </div>
+</section>
+
+<!-- 商户列表 -->
+<section class="section">
+  <h2 class="section-title">已配置商户</h2>
+  <p class="section-subtitle" id="merchants-sub">从后端 <code style="font-family:monospace;background:var(--neutral-cool);padding:2px 6px;border-radius:4px;">GET /api/v1/merchant</code> 实时获取</p>
+  <div class="merchant-list" id="merchantList">
+    <div style="padding: var(--space-5); text-align: center; color: var(--text-black-soft);">加载中...</div>
+  </div>
+</section>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/api.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon('home');
+
+(async function init() {
+  // 显示当前模式
+  const useReal = new URLSearchParams(location.search).get('real') === '1';
+  document.getElementById('modeBadge').textContent = useReal
+    ? '· 真实后端 (:8080)'
+    : '· Mock 后端 (:18080)';
+
+  // 1. 健康检查
+  try {
+    const { data } = await API.health();
+    document.getElementById('healthDot').style.background = 'var(--green-light)';
+    document.getElementById('healthText').textContent = `服务 UP · DB ${data.db}`;
+  } catch (e) {
+    document.getElementById('healthDot').style.background = 'var(--red)';
+    document.getElementById('healthText').textContent = '服务不可达';
+  }
+
+  // 2. 商户列表
+  try {
+    const { data } = await API.listMerchants();
+    const list = Array.isArray(data) ? data : [];
+    document.getElementById('stat-merchants').textContent = list.length;
+    document.getElementById('merchantList').innerHTML = list.length === 0
+      ? '<div style="padding: var(--space-5); text-align: center; color: var(--text-black-soft);">暂无启用商户</div>'
+      : list.map(m => `
+        <div class="merchant-row" onclick="useMerchant('${m.mchId}')">
+          <div class="merchant-avatar">${(m.merchantName || m.mchId).slice(0, 1)}</div>
+          <div class="merchant-info">
+            <div class="merchant-name">${m.merchantName || '未命名商户'} <span class="merchant-status">✓ 启用</span></div>
+            <div class="merchant-id">${m.mchId} · ${m.appId}</div>
+          </div>
+          <div style="color:var(--text-black-soft);font-size:1.4rem;">→</div>
+        </div>
+      `).join('');
+  } catch (e) {
+    document.getElementById('merchantList').innerHTML = '<div style="padding: var(--space-5); text-align: center; color: var(--red);">商户列表加载失败</div>';
+  }
+
+  // 3. 本地交易计数
+  document.getElementById('stat-orders').textContent = Store.listOrders().length;
+})();
+
+function useMerchant(mchId) {
+  sessionStorage.setItem('selected_mch_id', mchId);
+  location.href = 'booking.html?mchId=' + mchId + '&type=jsapi';
+}
+</script>
+
+</body>
+</html>

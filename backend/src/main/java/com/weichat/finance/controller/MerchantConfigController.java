@@ -1,6 +1,7 @@
 package com.weichat.finance.controller;
 
 import com.weichat.finance.common.R;
+import com.weichat.finance.controller.dto.MerchantConfigResponse;
 import com.weichat.finance.entity.MerchantConfig;
 import com.weichat.finance.entity.enums.MerchantMode;
 import com.weichat.finance.payment.client.WechatPayConfigManager;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 商户配置 Controller（v2.0.3 完整版）。
@@ -60,60 +62,79 @@ public class MerchantConfigController {
     }
 
     /**
-     * 根据商户号查询商户配置。
+     * 根据商户号查询商户配置（脱敏版）。
      */
-    @Operation(summary = "查询商户配置", description = "根据商户号查询商户配置信息")
+    @Operation(summary = "查询商户配置（脱敏）", description = "根据商户号查询商户配置信息（敏感字段已脱敏）")
     @GetMapping("/{mchId}")
-    public R<MerchantConfig> getByMchId(@Parameter(description = "商户号") @PathVariable String mchId) {
+    public R<MerchantConfigResponse> getByMchId(@Parameter(description = "商户号") @PathVariable String mchId) {
         log.info("查询商户配置 mchId={}", mchId);
         MerchantConfig config = merchantConfigService.getByMchId(mchId);
         if (config == null) {
             return R.fail(404, "商户不存在：" + mchId);
         }
-        return R.ok(config);
+        return R.ok(MerchantConfigResponse.mask(config));
     }
 
     /**
-     * 列出所有启用的商户。
+     * 列出所有启用的商户（脱敏版）。
      */
-    @Operation(summary = "列出所有启用的商户", description = "查询所有 enabled=1 的商户配置")
+    @Operation(summary = "列出所有启用的商户（脱敏）", description = "查询所有 enabled=1 的商户配置（敏感字段已脱敏）")
     @GetMapping
-    public R<List<MerchantConfig>> listEnabled() {
+    public R<List<MerchantConfigResponse>> listEnabled() {
         List<MerchantConfig> list = merchantConfigService.lambdaQuery()
             .eq(MerchantConfig::getEnabled, 1)
             .eq(MerchantConfig::getIsDeleted, 0)
             .list();
-        return R.ok(list == null ? Collections.emptyList() : list);
+        if (list == null) {
+            return R.ok(Collections.emptyList());
+        }
+        return R.ok(list.stream()
+            .map(MerchantConfigResponse::mask)
+            .collect(Collectors.toList()));
     }
 
     /**
-     * 列出所有启用的服务商（mode=PARTNER）。
+     * 列出所有启用的服务商（mode=PARTNER，脱敏版）。
      */
-    @Operation(summary = "列出所有启用的服务商", description = "查询 mode=PARTNER 且 enabled=1 的服务商")
+    @Operation(summary = "列出所有启用的服务商（脱敏）",
+        description = "查询 mode=PARTNER 且 enabled=1 的服务商（敏感字段已脱敏）")
     @GetMapping("/partner/list")
-    public R<List<MerchantConfig>> listPartners() {
+    public R<List<MerchantConfigResponse>> listPartners() {
         List<MerchantConfig> list = merchantConfigService.listEnabledPartnerMerchants();
-        return R.ok(list == null ? Collections.emptyList() : list);
+        if (list == null) {
+            return R.ok(Collections.emptyList());
+        }
+        return R.ok(list.stream()
+            .map(MerchantConfigResponse::mask)
+            .collect(Collectors.toList()));
     }
 
     /**
-     * 列出某服务商下的所有特约商户。
+     * 列出某服务商下的所有特约商户（脱敏版）。
      */
-    @Operation(summary = "列出某服务商下的特约商户",
-        description = "根据服务商号 parent_mch_id 查询特约商户列表")
+    @Operation(summary = "列出某服务商下的特约商户（脱敏）",
+        description = "根据服务商号 parent_mch_id 查询特约商户列表（敏感字段已脱敏）")
     @GetMapping("/{partnerMchId}/subs")
-    public R<List<MerchantConfig>> listSubMerchants(
+    public R<List<MerchantConfigResponse>> listSubMerchants(
             @Parameter(description = "服务商号") @PathVariable String partnerMchId) {
         log.info("列出服务商下的特约商户: partnerMchId={}", partnerMchId);
         List<MerchantConfig> list = merchantConfigService.listSubMerchants(partnerMchId);
-        return R.ok(list == null ? Collections.emptyList() : list);
+        if (list == null) {
+            return R.ok(Collections.emptyList());
+        }
+        return R.ok(list.stream()
+            .map(MerchantConfigResponse::mask)
+            .collect(Collectors.toList()));
     }
 
     /**
      * 创建商户（DIRECT 或 PARTNER）。
+     *
+     * <p>返回完整实体（POST 创建场景需要让前端确认写入内容，不脱敏）。
+     * 后续 GET 查询接口返回脱敏后的 DTO。</p>
      */
     @Operation(summary = "创建商户配置",
-        description = "创建商户（DIRECT 直连商户 / PARTNER 服务商或特约商户）")
+        description = "创建商户（DIRECT 直连商户 / PARTNER 服务商或特约商户）。返回完整实体（含敏感字段），仅创建时返回。")
     @PostMapping
     public R<MerchantConfig> create(@Valid @RequestBody MerchantConfig merchant) {
         log.info("创建商户: mchId={}, mode={}", merchant.getMchId(), merchant.getMode());

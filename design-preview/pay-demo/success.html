@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>支付成功 · 微信支付 Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.success-hero {
+  background: linear-gradient(135deg, var(--house-green) 0%, var(--green-uplift) 100%);
+  color: var(--text-white);
+  padding: var(--space-7) var(--space-3) var(--space-5);
+  text-align: center;
+}
+.success-checkmark {
+  width: 9rem; height: 9rem;
+  margin: 0 auto var(--space-3);
+  border-radius: 50%;
+  background: var(--green-accent);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 6px rgba(0,0,0,0.24), 0 8px 12px rgba(0,0,0,0.14);
+  animation: pop-in 0.6s cubic-bezier(0.32, 2.32, 0.61, 0.27);
+}
+@keyframes pop-in {
+  0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+  60% { transform: scale(1.1) rotate(0); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.success-checkmark svg { width: 4.8rem; height: 4.8rem; color: var(--white); }
+.success-title { font-size: 3rem; font-weight: 600; margin-bottom: var(--space-2); }
+.success-subtitle { font-size: 1.6rem; color: var(--text-white-soft); }
+
+.page { max-width: 60rem; margin: 0 auto; padding: var(--space-4) var(--space-3) var(--space-7); }
+
+.detail-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); margin-bottom: var(--space-3); }
+
+.amount-section {
+  text-align: center;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--ceramic);
+  margin-bottom: var(--space-3);
+}
+.amount-label { font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-1); }
+.amount-value { font-size: 4.6rem; font-weight: 700; color: var(--starbucks-green); }
+.amount-currency { font-size: 2.4rem; font-weight: 500; vertical-align: top; margin-right: 0.4rem; }
+
+.detail-row { display: flex; justify-content: space-between; padding: var(--space-2) 0; font-size: 1.4rem; }
+.detail-label { color: var(--text-black-soft); }
+.detail-value { color: var(--text-black); font-weight: 500; }
+.detail-value.mono { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; }
+
+.copy-btn { background: transparent; border: 1px solid var(--green-accent); color: var(--green-accent); padding: 0.2rem 0.8rem; border-radius: 0.4rem; font-size: 1.2rem; margin-left: 0.4rem; cursor: pointer; }
+.copy-btn:hover { background: var(--green-light); }
+
+.tips {
+  background: var(--neutral-cool);
+  padding: var(--space-3);
+  border-radius: 8px;
+  font-size: 1.3rem;
+  color: var(--text-black);
+  margin-top: var(--space-3);
+}
+.tips li { padding: 0.2rem 0; list-style: none; }
+.tips li::before { content: '✓ '; color: var(--green-accent); font-weight: 700; }
+
+.trace-row {
+  display: flex; align-items: center; gap: var(--space-1);
+  padding: var(--space-1) 0;
+  font-size: 1.3rem;
+}
+.trace-pill {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--green-light);
+  color: var(--starbucks-green);
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.actions-bar { display: flex; gap: var(--space-3); }
+.actions-bar .btn-primary, .actions-bar .btn-outline { flex: 1; }
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<section class="success-hero">
+  <div class="success-checkmark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="5 12 10 17 19 8"></polyline>
+    </svg>
+  </div>
+  <h1 class="success-title">支付成功</h1>
+  <p class="success-subtitle">资金已实时到账 · 请尽快确认发货</p>
+</section>
+
+<main class="page">
+
+  <div class="detail-card">
+    <div class="amount-section">
+      <div class="amount-label">支付金额</div>
+      <div class="amount-value">
+        <span class="amount-currency">¥</span><span id="amountVal">--</span>
+      </div>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">商品</span>
+      <span class="detail-value" id="descVal">-</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">商户订单号</span>
+      <span class="detail-value mono" id="otnVal">-</span>
+      <button class="copy-btn" onclick="copyText(document.getElementById('otnVal').textContent)">复制</button>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">商户号</span>
+      <span class="detail-value mono" id="mchVal">-</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">支付产品</span>
+      <span class="detail-value" id="typeVal">-</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">支付来源</span>
+      <span class="detail-value" id="sourceVal">-</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">支付时间</span>
+      <span class="detail-value mono" id="paidAtVal">-</span>
+    </div>
+  </div>
+
+  <!-- 链路追踪 -->
+  <div class="detail-card">
+    <h3 style="font-size:1.6rem;font-weight:600;margin-bottom:var(--space-3);">链路追踪</h3>
+    <div class="trace-row">
+      <span style="min-width:9rem;color:var(--text-black-soft);">前端 traceId</span>
+      <span class="trace-pill" id="clientTrace">--</span>
+      <button class="copy-btn" onclick="copyText(document.getElementById('clientTrace').textContent)">复制</button>
+    </div>
+    <div class="trace-row">
+      <span style="min-width:9rem;color:var(--text-black-soft);">后端 traceId</span>
+      <span class="trace-pill" id="serverTrace" style="background:var(--gold-lightest);color:var(--text-black);">请到详情页查看</span>
+    </div>
+    <div class="text-sm text-soft mt-2">traceId 用于在日志中关联前端请求与后端处理过程</div>
+  </div>
+
+  <div class="actions-bar">
+    <button class="btn-outline btn-lg" onclick="location.href='detail.html?otn='+otn">查看订单详情</button>
+    <button class="btn-primary btn-lg" onclick="location.href='orders.html'">返回订单列表</button>
+  </div>
+
+  <div class="tips" style="margin-top:var(--space-4);">
+    <strong style="color:var(--starbucks-green);">📡 真实场景流程</strong>
+    <ul style="margin-top:var(--space-2);">
+      <li>微信 → <code>/api/notify/v3/pay/success</code> 回调通知（验签 + 解密 + 落库）</li>
+      <li>商户后台主动轮询查单（v1.5 拉起支付后 3s/次 + v1.2 兜底 30min 扫描）</li>
+      <li>为防止回调丢失，本服务两条链路并跑，最终一致性</li>
+    </ul>
+  </div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/api.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon();
+
+const otn = URL.get('otn');
+if (!otn) { document.body.innerHTML = '<p style="padding:4rem;">订单号缺失</p>'; }
+
+// 查询最新订单状态
+(async function() {
+  try {
+    const { data } = await API.queryOrder(otn);
+    const order = Store.getOrder(otn) || {};
+    const amountTotal = data.amountTotal || order.amountTotal || 0;
+
+    document.getElementById('amountVal').textContent = (amountTotal / 100).toFixed(2);
+    document.getElementById('descVal').textContent = data.description || order.description || '-';
+    document.getElementById('otnVal').textContent = otn;
+    document.getElementById('mchVal').textContent = data.mchId || order.mchId || '-';
+    document.getElementById('typeVal').textContent = data.productType || order.productType || '-';
+    document.getElementById('sourceVal').textContent = data.source || order.apiResponse?.source || '-';
+    document.getElementById('paidAtVal').textContent = new Date().toLocaleString();
+    document.getElementById('clientTrace').textContent = order.traceId || '-';
+
+    Store.updateOrder(otn, { paidAt: new Date().toISOString(), payStatus: data.payStatus || 'PAID' });
+  } catch (e) {
+    document.body.innerHTML += '<p style="text-align:center;color:var(--red);margin-top:2rem;">获取订单失败：' + e.message + '</p>';
+  }
+})();
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('已复制'));
+}
+</script>
+
+</body>
+</html>

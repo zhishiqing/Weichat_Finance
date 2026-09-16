@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商户 · 微信支付 Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page { max-width: 90rem; margin: 0 auto; padding: var(--space-4) var(--space-3); }
+
+.profile-banner {
+  background: linear-gradient(135deg, var(--house-green) 0%, var(--green-uplift) 100%);
+  color: var(--text-white);
+  border-radius: var(--card-radius);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  box-shadow: var(--card-shadow);
+}
+.avatar {
+  width: 7.2rem; height: 7.2rem;
+  border-radius: 50%;
+  background: var(--green-accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: var(--white);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+.profile-info { flex: 1; }
+.profile-name { font-size: 2.4rem; font-weight: 600; margin-bottom: var(--space-1); }
+.profile-id { font-size: 1.4rem; color: var(--text-white-soft); font-family: 'JetBrains Mono', monospace; }
+.profile-tag { display: inline-block; padding: 0.3rem 1rem; background: var(--gold); color: var(--white); border-radius: var(--chip-radius); font-size: 1.2rem; font-weight: 600; margin-top: var(--space-2); }
+
+.section-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); margin-bottom: var(--space-4); }
+.section-title { font-size: 1.6rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--ceramic); }
+
+.api-row { display: flex; justify-content: space-between; padding: var(--space-2) 0; border-bottom: 1px solid var(--ceramic); font-size: 1.4rem; }
+.api-row:last-child { border-bottom: none; }
+.api-method { font-family: 'JetBrains Mono', monospace; font-weight: 600; padding: 2px 8px; border-radius: 4px; font-size: 1.2rem; min-width: 6rem; text-align: center; }
+.api-method.GET { background: var(--green-light); color: var(--starbucks-green); }
+.api-method.POST { background: #cce4ff; color: #0048ba; }
+.api-path { font-family: 'JetBrains Mono', monospace; color: var(--text-black); }
+.api-desc { color: var(--text-black-soft); font-size: 1.3rem; }
+
+.json-pre {
+  background: var(--neutral-cool);
+  padding: var(--space-3);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  color: var(--text-black);
+  max-height: 40rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); }
+.stat-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-3); text-align: center; }
+.stat-num { font-size: 2.2rem; font-weight: 700; color: var(--starbucks-green); }
+.stat-label { font-size: 1.3rem; color: var(--text-black-soft); margin-top: var(--space-1); }
+
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .profile-banner { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+
+  <!-- 商户信息 -->
+  <div class="profile-banner">
+    <div class="avatar" id="avatar">?</div>
+    <div class="profile-info">
+      <div class="profile-name" id="merName">加载中...</div>
+      <div class="profile-id" id="merId">-</div>
+      <span class="profile-tag" id="merStatus">✓ 启用</span>
+    </div>
+  </div>
+
+  <!-- 数据 -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-num" id="s-local">0</div>
+      <div class="stat-label">本地下单数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="s-paid">0</div>
+      <div class="stat-label">已支付</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="s-total">¥0</div>
+      <div class="stat-label">总交易额</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="s-merchants">-</div>
+      <div class="stat-label">启用商户</div>
+    </div>
+  </div>
+
+  <!-- 商户配置详情 -->
+  <div class="section-card">
+    <h2 class="section-title">商户配置详情</h2>
+    <pre class="json-pre" id="merchantDetail">加载中...</pre>
+  </div>
+
+  <!-- API 接口列表 -->
+  <div class="section-card">
+    <h2 class="section-title">📡 后端 API 端点 (v2.1)</h2>
+    <div class="api-row">
+      <span class="api-method GET">GET</span>
+      <span class="api-path">/api/health</span>
+      <span class="api-desc">健康检查</span>
+    </div>
+    <div class="api-row">
+      <span class="api-method GET">GET</span>
+      <span class="api-path">/api/v1/merchant</span>
+      <span class="api-desc">列出所有启用商户</span>
+    </div>
+    <div class="api-row">
+      <span class="api-method GET">GET</span>
+      <span class="api-path">/api/v1/merchant/{mchId}</span>
+      <span class="api-desc">查询单个商户配置</span>
+    </div>
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <span class="api-path">/api/v1/payment/jsapi/create</span>
+      <span class="api-desc">创建 JSAPI 订单（返回 prepay_id）</span>
+    </div>
+    <div class="api-row">
+      <span class="api-method GET">GET</span>
+      <span class="api-path">/api/v1/payment/order/{outTradeNo}</span>
+      <span class="api-desc">主动查单</span>
+    </div>
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <span class="api-path">/api/v1/payment/order/{outTradeNo}/close</span>
+      <span class="api-desc">关闭未支付订单</span>
+    </div>
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <span class="api-path">/api/v1/payment/native/create</span>
+      <span class="api-desc">创建 Native 订单（返回 code_url）</span>
+    </div>
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <span class="api-path">/api/v1/payment/refund/create</span>
+      <span class="api-desc">申请退款（幂等）</span>
+    </div>
+    <div class="api-row">
+      <span class="api-method GET">GET</span>
+      <span class="api-path">/api/v1/payment/refund/{outRefundNo}</span>
+      <span class="api-desc">查退款进度</span>
+    </div>
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <span class="api-path">/api/notify/v3/pay/success</span>
+      <span class="api-desc">微信支付回调（验签+解密）</span>
+    </div>
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <span class="api-path">/api/notify/v3/refund/success</span>
+      <span class="api-desc">微信退款回调（验签+解密）</span>
+    </div>
+  </div>
+
+  <!-- 后端架构说明 -->
+  <div class="section-card">
+    <h2 class="section-title">🏗️ 后端架构说明</h2>
+    <div style="font-size: 1.4rem; line-height: 1.8; color: var(--text-black);">
+      <p><strong style="color:var(--starbucks-green);">统一响应</strong>：所有 Controller 返回 <code style="background:var(--neutral-cool);padding:2px 6px;border-radius:4px;">R&lt;T&gt;</code> = <code>{ code, message, data }</code></p>
+      <p><strong style="color:var(--starbucks-green);">CORS</strong>：开发期放行 <code>http://localhost:*</code>，生产应由网关处理</p>
+      <p><strong style="color:var(--starbucks-green);">MDC traceId</strong>：前端请求头 <code>X-Trace-Id</code> → 后端 MDC → 日志串联</p>
+      <p><strong style="color:var(--starbucks-green);">支付模式</strong>：环境变量 <code>WX_PAY_MODE</code> = MOCK（默认）/ REAL</p>
+      <p><strong style="color:var(--starbucks-green);">双保险查单</strong>：v1.5 主动轮询（3s/次）+ v1.2 兜底（30min 扫描）</p>
+    </div>
+  </div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/api.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon('me');
+
+(async function init() {
+  // 单商户详情
+  const mchId = URL.get('mchId') || sessionStorage.getItem('selected_mch_id') || '1674723182';
+  try {
+    const { data } = await API.getMerchant(mchId);
+    document.getElementById('avatar').textContent = (data.merchantName || data.mchId).slice(0, 1);
+    document.getElementById('merName').textContent = data.merchantName;
+    document.getElementById('merId').textContent = `${data.mchId} · ${data.appId}`;
+    document.getElementById('merStatus').textContent = data.enabled ? '✓ 启用' : '✕ 禁用';
+    document.getElementById('merchantDetail').textContent = JSON.stringify(data, null, 2);
+  } catch (e) {
+    document.getElementById('merName').textContent = '加载失败';
+    document.getElementById('merId').textContent = e.message;
+  }
+
+  // 商户列表
+  try {
+    const { data } = await API.listMerchants();
+    document.getElementById('s-merchants').textContent = Array.isArray(data) ? data.length : 0;
+  } catch (e) {}
+
+  // 本地统计
+  const orders = Store.listOrders();
+  document.getElementById('s-local').textContent = orders.length;
+  const paid = orders.filter(o => ['PAID', 'SUCCESS'].includes(o.payStatus));
+  document.getElementById('s-paid').textContent = paid.length;
+  const total = orders.reduce((s, o) => s + (o.amountTotal || 0), 0);
+  document.getElementById('s-total').textContent = '¥' + (total / 100).toFixed(2);
+})();
+</script>
+
+</body>
+</html>

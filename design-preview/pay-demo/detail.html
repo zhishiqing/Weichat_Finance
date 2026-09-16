@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>订单详情 · 微信支付 Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page { max-width: 80rem; margin: 0 auto; padding: var(--space-4) var(--space-3); }
+.breadcrumb { font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-3); }
+.breadcrumb a { color: var(--green-accent); }
+
+.status-banner {
+  background: linear-gradient(135deg, var(--house-green) 0%, var(--green-uplift) 100%);
+  color: var(--text-white);
+  border-radius: var(--card-radius);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--card-shadow);
+}
+.status-info .status-main { font-size: 2.4rem; font-weight: 600; margin-bottom: var(--space-1); }
+.status-info .status-sub { font-size: 1.3rem; color: var(--text-white-soft); }
+
+.timeline-card, .detail-card, .trace-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); margin-bottom: var(--space-3); }
+.section-title { font-size: 1.6rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--ceramic); }
+
+.timeline { position: relative; padding-left: var(--space-4); }
+.timeline::before { content: ''; position: absolute; left: 0.6rem; top: 0.6rem; bottom: 0.6rem; width: 2px; background: var(--ceramic); }
+.timeline-item { position: relative; padding-bottom: var(--space-3); }
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-dot { position: absolute; left: -2.4rem; top: 0.4rem; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: var(--ceramic); border: 3px solid var(--white); }
+.timeline-item.done .timeline-dot { background: var(--green-accent); }
+.timeline-item.current .timeline-dot { background: var(--green-accent); box-shadow: 0 0 0 4px var(--green-light); }
+.timeline-time { font-size: 1.2rem; color: var(--text-black-soft); margin-bottom: 0.2rem; font-family: 'JetBrains Mono', monospace; }
+.timeline-label { font-size: 1.4rem; color: var(--text-black); font-weight: 500; }
+
+.detail-row { display: flex; justify-content: space-between; padding: var(--space-2) 0; font-size: 1.4rem; }
+.detail-label { color: var(--text-black-soft); }
+.detail-value { color: var(--text-black); font-weight: 500; }
+.detail-value.mono { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; }
+
+.copy-btn { background: transparent; border: 1px solid var(--green-accent); color: var(--green-accent); padding: 0.2rem 0.8rem; border-radius: 0.4rem; font-size: 1.2rem; margin-left: 0.4rem; cursor: pointer; }
+.copy-btn:hover { background: var(--green-light); }
+
+.price-row { display: flex; justify-content: space-between; padding: var(--space-2) 0; font-size: 1.4rem; }
+.price-row.total { border-top: 1px solid var(--ceramic); margin-top: var(--space-2); padding-top: var(--space-3); font-size: 1.6rem; font-weight: 700; }
+.price-row.total .price { color: var(--starbucks-green); font-size: 2.2rem; }
+
+.trace-card .trace-id { font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; color: var(--starbucks-green); font-weight: 500; padding: 0.4rem 0.8rem; background: var(--green-light); border-radius: 4px; }
+.trace-meta { display: flex; gap: var(--space-2); align-items: center; padding: var(--space-2) 0; font-size: 1.3rem; }
+.trace-meta .label { color: var(--text-black-soft); min-width: 8rem; }
+
+.actions-bar { display: flex; gap: var(--space-2); }
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+  <div class="breadcrumb">
+    <a href="index.html">收银台</a> / <a href="orders.html">交易记录</a> / <span>订单详情</span>
+  </div>
+
+  <!-- 状态 banner -->
+  <div class="status-banner">
+    <div class="status-info">
+      <div class="status-main" id="statusMain">加载中...</div>
+      <div class="status-sub" id="statusSub"></div>
+    </div>
+    <div class="actions-bar" id="statusActions"></div>
+  </div>
+
+  <!-- trace 信息 -->
+  <div class="trace-card">
+    <h2 class="section-title">链路追踪</h2>
+    <div class="trace-meta">
+      <span class="label">客户端 traceId</span>
+      <span class="trace-id" id="clientTraceId">-</span>
+      <button class="copy-btn" onclick="copyText(document.getElementById('clientTraceId').textContent)">复制</button>
+    </div>
+    <div class="trace-meta">
+      <span class="label">订单号</span>
+      <span class="trace-id" id="otn">-</span>
+      <button class="copy-btn" onclick="copyText(document.getElementById('otn').textContent)">复制</button>
+    </div>
+    <div class="trace-meta">
+      <span class="label">创建于</span>
+      <span id="createdAt" style="font-family: 'JetBrains Mono', monospace;">-</span>
+    </div>
+  </div>
+
+  <!-- 订单信息 -->
+  <div class="detail-card">
+    <h2 class="section-title">订单信息</h2>
+    <div class="detail-row"><span class="detail-label">商品描述</span><span class="detail-value" id="desc">-</span></div>
+    <div class="detail-row"><span class="detail-label">商户号</span><span class="detail-value mono" id="mchId">-</span></div>
+    <div class="detail-row"><span class="detail-label">AppID</span><span class="detail-value mono" id="appId">-</span></div>
+    <div class="detail-row"><span class="detail-label">OpenID</span><span class="detail-value mono" id="openid">-</span></div>
+    <div class="detail-row"><span class="detail-label">产品类型</span><span class="detail-value" id="productType">-</span></div>
+    <div class="detail-row"><span class="detail-label">支付来源</span><span class="detail-value" id="source">-</span></div>
+    <div class="price-row"><span>订单金额</span><span>¥<span id="amount">-</span></span></div>
+    <div class="price-row total"><span>应付总额</span><span class="price">¥<span id="total">-</span></span></div>
+  </div>
+
+  <!-- 进度时间线 -->
+  <div class="timeline-card">
+    <h2 class="section-title">订单进度</h2>
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <!-- 响应详情 -->
+  <div class="detail-card">
+    <h2 class="section-title">支付响应 (Source Data)</h2>
+    <pre id="rawResponse" style="background:var(--neutral-cool);padding:var(--space-3);border-radius:8px;overflow:auto;font-family:'JetBrains Mono',monospace;font-size:1.2rem;line-height:1.6;color:var(--text-black);">加载中...</pre>
+  </div>
+
+  <!-- 操作 -->
+  <div class="actions-bar" style="margin-top:var(--space-3);">
+    <button class="btn-outline" onclick="location.href='orders.html'">← 返回列表</button>
+    <button class="btn-primary" id="btnQuery" onclick="manualQuery()">🔄 主动查单</button>
+    <button class="btn-dark" id="btnClose" onclick="closeOrder()">✕ 关单</button>
+    <button class="btn-outline" id="btnRefund" style="color:var(--red);border-color:var(--red);" onclick="refundOrder()">退款</button>
+  </div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/api.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon('orders');
+
+const otn = URL.get('otn') || sessionStorage.getItem('last_query_otn');
+if (!otn) { document.body.innerHTML = '<p style="padding:4rem;text-align:center;">订单号缺失，请从列表进入</p>'; }
+
+const statusMap = {
+  SUBMITTING: { main: '⏳ 提交中', desc: '商户系统已提交订单，等待微信受理' },
+  CREATED:    { main: '📋 已创建', desc: '订单已创建，等待用户支付' },
+  NOTPAY:     { main: '⏰ 待支付', desc: '订单已生成，请尽快支付' },
+  PAID:       { main: '✅ 已支付', desc: '微信支付成功（异步回调已落库）' },
+  CLOSED:     { main: '✕ 已关闭', desc: '订单已关闭（超时未支付或主动关单）' },
+  REFUND:     { main: '💸 退款中', desc: '退款处理中' },
+  REFUNDED:   { main: '✓ 已退款', desc: '退款已到账' },
+  SUCCESS:    { main: '🎉 支付成功', desc: '交易完成' },
+};
+
+let currentStatus = 'NOTPAY';
+let queryTimer = null;
+let isPolling = false;
+
+async function refresh() {
+  try {
+    const { data, traceId } = await API.queryOrder(otn);
+    document.getElementById('clientTraceId').textContent = traceId;
+    document.getElementById('otn').textContent = data.outTradeNo || otn;
+    document.getElementById('createdAt').textContent = new Date().toLocaleString();
+
+    // 更新订单到本地缓存
+    const cached = Store.getOrder(otn);
+    if (cached) Store.updateOrder(otn, { ...data, traceId });
+
+    const st = statusMap[data.payStatus] || statusMap[data.status] || statusMap.NOTPAY;
+    document.getElementById('statusMain').textContent = st.main;
+    document.getElementById('statusSub').textContent = st.desc;
+    currentStatus = data.payStatus || data.status;
+
+    document.getElementById('desc').textContent = data.description || cached?.description || '-';
+    document.getElementById('mchId').textContent = data.mchId || cached?.mchId || '-';
+    document.getElementById('appId').textContent = data.appId || cached?.appId || '-';
+    document.getElementById('openid').textContent = data.openid || cached?.openid || '-';
+    document.getElementById('productType').textContent = data.productType || (cached?.productType || 'JSAPI');
+    document.getElementById('source').textContent = data.source || 'MOCK';
+
+    const amount = data.amountTotal || cached?.amountTotal || 0;
+    document.getElementById('amount').textContent = (amount / 100).toFixed(2);
+    document.getElementById('total').textContent = (amount / 100).toFixed(2);
+
+    renderTimeline(currentStatus, data);
+
+    document.getElementById('rawResponse').textContent = JSON.stringify(data, null, 2);
+
+    // 自动停止轮询
+    if (['PAID', 'CLOSED', 'REFUND', 'REFUNDED', 'SUCCESS'].includes(currentStatus)) {
+      stopPolling();
+    }
+
+    updateButtons();
+  } catch (e) {
+    if (e.code === 404) {
+      document.getElementById('statusMain').textContent = '⛔ 订单不存在';
+      document.getElementById('statusSub').textContent = '本地缓存订单，后端未查到';
+    }
+    stopPolling();
+  }
+}
+
+function renderTimeline(status, data) {
+  const steps = [
+    { label: '订单提交', done: true, time: Store.getOrder(otn)?.createTime },
+    { label: '订单创建', done: ['CREATED', 'NOTPAY', 'PAID', 'SUCCESS', 'REFUND', 'REFUNDED', 'CLOSED'].includes(status) },
+    { label: '用户支付', done: ['PAID', 'SUCCESS', 'REFUND', 'REFUNDED'].includes(status) },
+    { label: '支付成功', done: ['PAID', 'SUCCESS', 'REFUND', 'REFUNDED'].includes(status) },
+    { label: status === 'CLOSED' ? '订单关闭' : '交易完成', done: ['CLOSED', 'REFUNDED'].includes(status), isFinal: true },
+  ];
+
+  document.getElementById('timeline').innerHTML = steps.map((s, i) => `
+    <div class="timeline-item ${s.done ? 'done' : ''} ${s.done && !steps.slice(i+1).some(x => x.done) ? 'current' : ''}">
+      <div class="timeline-dot"></div>
+      <div class="timeline-time">${s.time ? new Date(s.time).toLocaleString() : '-'}</div>
+      <div class="timeline-label">${s.label}</div>
+    </div>
+  `).join('');
+}
+
+function updateButtons() {
+  const isPaid = ['PAID', 'SUCCESS'].includes(currentStatus);
+  const isUnpaid = ['SUBMITTING', 'CREATED', 'NOTPAY'].includes(currentStatus);
+  document.getElementById('btnClose').disabled = !isUnpaid;
+  document.getElementById('btnRefund').disabled = !isPaid;
+  document.getElementById('btnQuery').textContent = isPolling ? '⏹ 停止轮询' : '🔄 主动查单';
+}
+
+function startPolling() {
+  if (queryTimer) return;
+  isPolling = true;
+  queryTimer = setInterval(refresh, 3000);
+  updateButtons();
+  toast('开始轮询查单（3 秒/次）');
+}
+
+function stopPolling() {
+  if (queryTimer) { clearInterval(queryTimer); queryTimer = null; }
+  isPolling = false;
+  updateButtons();
+}
+
+async function manualQuery() {
+  if (isPolling) stopPolling();
+  else startPolling();
+  await refresh();
+}
+
+async function closeOrder() {
+  if (!confirm('确认关闭订单？')) return;
+  try {
+    await API.closeOrder(otn);
+    toast('订单已关闭');
+    refresh();
+  } catch (e) {}
+}
+
+async function refundOrder() {
+  const amount = prompt('退款金额（分）', '1');
+  if (!amount) return;
+  const outRefundNo = 'R' + Date.now();
+  try {
+    const { data, traceId } = await API.createRefund({
+      outRefundNo, outTradeNo: otn,
+      amountRefund: Number(amount), amountTotal: Number(amount),
+      reason: '用户申请退款'
+    });
+    toast(`退款单创建成功 ${outRefundNo}`);
+    setTimeout(refresh, 500);
+  } catch (e) {}
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('已复制'));
+}
+
+refresh();
+startPolling();
+</script>
+
+</body>
+</html>

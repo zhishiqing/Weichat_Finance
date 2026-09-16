@@ -62,13 +62,21 @@ public class MerchantConfigServiceImpl extends ServiceImpl<MerchantConfigMapper,
         }
 
         boolean isPartner = MerchantMode.PARTNER.equals(merchant.getMode());
-        if (isPartner) {
+        boolean isServiceProvider = isPartner && merchant.getParentMchId() == null;
+        boolean isSubMerchant = isPartner && !isServiceProvider;
+
+        if (isSubMerchant) {
+            // 子商户（特约商户）：必须有 parent_mch_id + sub_app_id
             if (merchant.getParentMchId() == null || merchant.getParentMchId().isEmpty()) {
-                throw new IllegalArgumentException("PARTNER 模式必须配置 parent_mch_id（服务商号）");
+                throw new IllegalArgumentException("特约商户必须配置 parent_mch_id（服务商号）");
             }
             if (merchant.getSubAppId() == null || merchant.getSubAppId().isEmpty()) {
-                throw new IllegalArgumentException("PARTNER 模式必须配置 sub_app_id（特约商户 AppID）");
+                throw new IllegalArgumentException("特约商户必须配置 sub_app_id（特约商户 AppID）");
             }
+        } else if (isServiceProvider) {
+            // 服务商本身：可以没有 parent_mch_id（它自己就是服务商）
+            // sub_app_id 不适用
+            merchant.setSubAppId(null);
         } else {
             // DIRECT 模式：清空 PARTNER 字段
             merchant.setParentMchId(null);

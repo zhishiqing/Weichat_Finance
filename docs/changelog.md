@@ -13,6 +13,99 @@
 
 ---
 
+## v2.0.5 · 2026-09-16
+
+### Added · DTO 脱敏 + 服务商进件 Controller
+
+**目标**：v2.0.3 暴露敏感字段（apiV3Key / certPrivateKeyPath）+ 缺服务商进件接口。
+
+#### 1. MerchantConfigResponse DTO（v2.0.4 升级）
+
+| 字段 | 原值 | 脱敏后 |
+|---|---|---|
+| `apiV3Key` | 32 位明文 | **DTO 不暴露**（编译期保证）|
+| `certPrivateKeyPath` | 完整路径 | **DTO 不暴露** |
+| `certSerialNo` | 40 位 hex | `6F1****4A3`（前后各 3 位） |
+| `v2Key` | 明文 | null |
+| `sensitiveMasked` | - | true（前端可检测） |
+
+**E2E**：返回示例
+```json
+{
+  "mchId": "1674723182",
+  "appId": "wx9d066e071d8e4e33",
+  "mode": "DIRECT",
+  "certSerialNo": "6F1****4A3",
+  "sensitiveMasked": true
+}
+```
+
+#### 2. PartnerController 6 个接口
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| `POST` | `/api/v1/partner/onboard` | 服务商进件（注册） |
+| `PUT` | `/api/v1/partner/{partnerMchId}` | 更新服务商资料（脱敏返回） |
+| `GET` | `/api/v1/partner/{partnerMchId}` | 查询服务商进件状态（脱敏） |
+| `POST` | `/api/v1/partner/{partnerMchId}/sub/onboard` | 子商户进件 |
+| `GET` | `/api/v1/partner/{partnerMchId}/sub/list` | 列出子商户（脱敏） |
+| `POST` | `/api/v1/partner/{partnerMchId}/reload-config` | 手动预加载服务商 Config |
+
+#### 3. PartnerService 业务规则
+
+- 服务商进件：`mode=PARTNER, parent_mch_id=null`（服务商本身）
+- 特约商户进件：`mode=PARTNER, parent_mch_id=<服务商号>, sub_app_id=<特约商户 AppID>`
+- 服务商禁用时不能进件子商户
+- 联系人 + 资质信息打包到 `ext` JSON 字段
+
+#### 4. MerchantConfigService.createMerchant 修复
+
+**Bug**：v2.0.3 把所有 PARTNER 模式都要求有 `parent_mch_id`，但**服务商本身**就是 PARTNER 模式且没有 parent_mch_id。
+
+**修复**：区分三种角色
+- DIRECT 模式：清空 PARTNER 字段
+- PARTNER 服务商：可以有或没有 `parent_mch_id`（它自己就是服务商），无 `sub_app_id`
+- PARTNER 子商户：必须有 `parent_mch_id` + `sub_app_id`
+
+#### 5. 单元测试（11/11 PASS）
+
+`MerchantConfigResponseTest`：
+- ✅ apiV3Key 不暴露
+- ✅ certPrivateKeyPath 不暴露
+- ✅ certSerialNo 前后各 3 位 + 中间 ****（10 字符）
+- ✅ v2Key 隐藏
+- ✅ 其他公开字段正常传递
+- ✅ sensitiveMasked 标志位
+- ✅ PARTNER 模式字段正常
+- ✅ null 实体返回 null
+- ✅ certSerialNo 为 null 返回 ****
+- ✅ certSerialNo 短于 6 位返回 ****
+- ✅ certSerialNo 7 位：`ABC****234`
+
+**全部测试**：19/19 PASS（11 脱敏 + 8 路由）
+
+#### 6. E2E 验证
+
+| 场景 | 结果 |
+|---|---|
+| 查询 1674723182（DIRECT 脱敏） | ✅ `certSerialNo: 6F1****4A3` |
+| 服务商进件 1000400645 | ✅ id=5，mode=PARTNER，parent_mch_id=null |
+| 服务商查询（脱敏） | ✅ `certSerialNo: PAR****001` |
+| 子商户进件 1900000200 | ✅ id=6，parent_mch_id=1000400645 |
+| 列子商户（脱敏） | ✅ 2 条，全部 `sensitiveMasked: true` |
+| 列所有服务商 | ✅ 3 条 PARTNER 记录 |
+| mch_id 重复校验 | ✅ 400 + `mch_id 已存在` |
+
+---
+
+## v2.0.4 · 2026-09-16
+
+### Added · DTO 脱敏
+
+（同 v2.0.5 §1，本节已被 v2.0.5 吸收）
+
+---
+
 ## v2.0.3 · 2026-09-16
 
 ### Added · 服务商进件 + 商户 CRUD

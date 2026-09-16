@@ -139,11 +139,12 @@ curl http://localhost:8080/api/health
 
 详见 [docs/changelog.md](docs/changelog.md)。
 
-最新版本：**v2.0.3**（2026-09-16）
+最新版本：**v2.0.5**（2026-09-16）
 
 | 日期 | 版本 | 摘要 |
 |---|---|---|
-| 2026-09-16 | v2.0.3 | **服务商进件 + 商户 CRUD**：MerchantConfigController 9 个接口（CRUD + 列出服务商 + 列出子商户 + 手动预加载 Config + 清空缓存），MerchantConfigService 完备 PARTNER 校验 |
+| 2026-09-16 | v2.0.5 | **DTO 脱敏 + 服务商进件 Controller**：MerchantConfigResponse 隐藏 apiV3Key/certPrivateKeyPath（DTO 编译期保证），certSerialNo 前后各 3 位脱敏，PartnerController 6 个接口（onboard/update/getStatus/subOnboard/subList/reloadConfig），11 个脱敏单元测试 PASS |
+| 2026-09-16 | v2.0.4 | **DTO 脱敏（MerchantConfigResponse）**：隐藏 apiV3Key + certPrivateKeyPath + v2Key，certSerialNo 前后各 3 位 + 中间 ****，sensitiveMasked 标志位 |
 | 2026-09-16 | v2.0.2 | **已知 mchId 路由优化**：NotificationParserManager 增加四段式路由（默认 → 历史 → 遍历兜底），WechatNotifyController 集成 parseWithHistory，8 个单元测试 PASS |
 | 2026-09-16 | v2.0.1 | **NotificationController 智能路由**：三段式 Parser 路由（默认→遍历兜底），6 个单元测试 PASS |
 | 2026-09-16 | v2.0-alpha | **服务商模式架构**：Flyway V6 增加 parent_mch_id/sub_mch_id/sub_app_id 字段 + 新增 WechatPayConfigManager（多 Config 缓存 + 路由）+ NotificationParserManager + RealService 自动适配 DIRECT/PARTNER |

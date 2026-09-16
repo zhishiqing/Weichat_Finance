@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API 调试 · 微信支付 Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page { flex: 1; display: flex; align-items: center; justify-content: center; padding: var(--space-5) var(--space-3); }
+.login-card { width: 100%; max-width: 60rem; background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-5); }
+.login-logo { width: 6rem; height: 6rem; border-radius: 50%; background: var(--green-accent); display: flex; align-items: center; justify-content: center; color: var(--white); font-size: 2.8rem; font-weight: 700; margin: 0 auto var(--space-3); }
+.login-title { font-size: 2.4rem; font-weight: 600; color: var(--starbucks-green); text-align: center; margin-bottom: var(--space-1); }
+.login-subtitle { font-size: 1.4rem; color: var(--text-black-soft); text-align: center; margin-bottom: var(--space-4); }
+
+.test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); }
+.test-card { padding: var(--space-3); background: var(--neutral-cool); border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.2s ease; }
+.test-card:hover { background: var(--green-light); transform: translateY(-2px); }
+.test-card-icon { font-size: 2.4rem; margin-bottom: var(--space-1); }
+.test-card-name { font-size: 1.4rem; font-weight: 600; }
+.test-card-desc { font-size: 1.2rem; color: var(--text-black-soft); margin-top: 0.2rem; }
+
+.log-section { background: var(--neutral-cool); border-radius: 8px; padding: var(--space-3); max-height: 30rem; overflow: auto; font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; }
+.log-line { padding: 0.2rem 0; line-height: 1.6; }
+.log-time { color: var(--text-black-soft); margin-right: var(--space-2); }
+.log-method { display: inline-block; min-width: 4rem; text-align: center; padding: 1px 4px; border-radius: 3px; font-weight: 600; }
+.log-method.GET { background: var(--green-light); color: var(--starbucks-green); }
+.log-method.POST { background: #cce4ff; color: #0048ba; }
+.log-status-200 { color: var(--green-accent); font-weight: 600; }
+.log-status-error { color: var(--red); font-weight: 600; }
+
+@media (max-width: 768px) {
+  .test-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+  <div class="login-card">
+    <div class="login-logo">W</div>
+    <h1 class="login-title">API 调试中心</h1>
+    <p class="login-subtitle">直接调用后端接口，验证 traceId + 响应</p>
+
+    <div class="test-grid">
+      <div class="test-card" onclick="testApi('health')">
+        <div class="test-card-icon">💚</div>
+        <div class="test-card-name">健康检查</div>
+        <div class="test-card-desc">GET /health</div>
+      </div>
+      <div class="test-card" onclick="testApi('merchants')">
+        <div class="test-card-icon">🏪</div>
+        <div class="test-card-name">商户列表</div>
+        <div class="test-card-desc">GET /v1/merchant</div>
+      </div>
+      <div class="test-card" onclick="testApi('partnerList')">
+        <div class="test-card-icon">🤝</div>
+        <div class="test-card-name">服务商列表</div>
+        <div class="test-card-desc">GET /v1/merchant/partner/list</div>
+      </div>
+      <div class="test-card" onclick="testApi('createJsapi')">
+        <div class="test-card-icon">📦</div>
+        <div class="test-card-name">创建 JSAPI</div>
+        <div class="test-card-desc">POST /v1/payment/jsapi/create</div>
+      </div>
+      <div class="test-card" onclick="testApi('createNative')">
+        <div class="test-card-icon">📱</div>
+        <div class="test-card-name">创建 Native</div>
+        <div class="test-card-desc">POST /v1/payment/native/create</div>
+      </div>
+      <div class="test-card" onclick="testApi('queryOrder')">
+        <div class="test-card-icon">🔍</div>
+        <div class="test-card-name">查单</div>
+        <div class="test-card-desc">GET /v1/payment/order/{otn}</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.4rem;font-weight:600;margin-bottom:var(--space-2);">📋 调用日志</h3>
+    <div class="log-section" id="logSection">
+      <div class="text-soft" style="font-family:Inter;">点击上方按钮开始调用 · 每次调用会记录 traceId 用于日志串联</div>
+    </div>
+
+    <div class="text-center mt-4">
+      <button class="btn-ghost btn-sm" onclick="clearLog()">清空日志</button>
+    </div>
+  </div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/api.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon();
+
+function log(method, path, code, traceId) {
+  const el = document.getElementById('logSection');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  const time = new Date().toLocaleTimeString();
+  const codeClass = code >= 200 && code < 300 ? 'log-status-200' : 'log-status-error';
+  line.innerHTML = `<span class="log-time">${time}</span> <span class="log-method ${method}">${method}</span> <span class="${codeClass}">${code}</span> ${path} <span style="color:var(--text-black-soft);">traceId=${traceId || '-'}</span>`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('logSection').innerHTML = '';
+}
+
+async function testApi(name) {
+  try {
+    if (name === 'health') {
+      const { data, traceId } = await API.health();
+      log('GET', '/health', 200, traceId);
+      toast('服务 UP · DB ' + data.db);
+    } else if (name === 'merchants') {
+      const { data, traceId } = await API.listMerchants();
+      log('GET', '/v1/merchant', 200, traceId);
+      toast(`共 ${data.length} 个启用商户`);
+    } else if (name === 'partnerList') {
+      const { data, traceId } = await API.listPartners();
+      log('GET', '/v1/merchant/partner/list', 200, traceId);
+      toast(`共 ${data.length} 个服务商`);
+    } else if (name === 'createJsapi') {
+      const req = {
+        outTradeNo: 'TEST_' + Date.now(),
+        description: 'API 调试 - JSAPI',
+        amountTotal: 1,
+        openid: 'oUpF8uMuAxxxxxxxxxxxxxxxxxx',
+      };
+      const { data, traceId } = await API.createJsapiOrder(req);
+      log('POST', '/v1/payment/jsapi/create', 200, traceId);
+      toast(`订单创建：${data.prepayId}`);
+    } else if (name === 'createNative') {
+      const req = {
+        outTradeNo: 'TEST_NATIVE_' + Date.now(),
+        description: 'API 调试 - Native',
+        amountTotal: 1,
+      };
+      const { data, traceId } = await API.createNativeOrder(req);
+      log('POST', '/v1/payment/native/create', 200, traceId);
+      toast(`Native 订单：${data.codeUrl?.slice(0, 30)}...`);
+    } else if (name === 'queryOrder') {
+      const otn = prompt('输入商户订单号', Store.listOrders()[0]?.outTradeNo || '');
+      if (!otn) return;
+      const { data, traceId } = await API.queryOrder(otn);
+      log('GET', `/v1/payment/order/${otn}`, 200, traceId);
+      toast(`状态：${data.payStatus || data.status}`);
+    }
+  } catch (e) {
+    log(e.code >= 200 && e.code < 300 ? 'GET' : 'POST', 'API', e.code || 500, e.traceId || '-');
+  }
+}
+</script>
+
+</body>
+</html>
