@@ -86,6 +86,8 @@ Weichat_Finance/
     ├── operations.md          ← 运维手册（启动、证书、上线 checklist）
     ├── changelog.md           ← 变更日志
     └── db/schema/V1__weichat_finance_init.sql  ← 数据库唯一脚本
+├── DESIGN.md                  ← Starbucks 风格设计 tokens（生成自 getdesign）
+└── design-preview/            ← UI 预览页（login.html / payment-success.html + 截图）
 ```
 
 ## 文档导航
@@ -97,6 +99,8 @@ Weichat_Finance/
 | 接口怎么调、数据怎么存、SQL 脚本怎么跑 | 👉 [docs/api.md](docs/api.md) |
 | 怎么启动、怎么部署、怎么上线 | 👉 [docs/operations.md](docs/operations.md) |
 | 每个版本改了什么 | 👉 [docs/changelog.md](docs/changelog.md) |
+| UI 设计 tokens（Starbucks 风格） | 👉 [DESIGN.md](DESIGN.md) |
+| 登录页 / 支付成功页 预览截图 | 👉 [design-preview/README.md](design-preview/README.md) |
 
 ## 快速开始
 
