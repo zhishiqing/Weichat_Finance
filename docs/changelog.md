@@ -13,6 +13,138 @@
 
 ---
 
+## v2.0.3 · 2026-09-16
+
+### Added · 服务商进件 + 商户 CRUD
+
+**目标**：v2.0-alpha + v2.0.1 留待 v2.0.3 完成的核心任务——服务商进件和商户管理能力。
+
+#### 1. MerchantConfigService 完备
+
+新增方法：
+- `listEnabledPartnerMerchants()`：列出所有启用的服务商（mode=PARTNER）
+- `listSubMerchants(partnerMchId)`：列出某服务商下的所有特约商户
+- `createMerchant(merchant)`：创建商户（含 PARTNER 模式校验）
+- `updateMerchant(merchant)`：更新商户配置
+- `deleteMerchant(mchId)`：软删除商户（is_deleted=1）
+
+**PARTNER 模式校验**：
+- mch_id 必填且唯一
+- api_v3_key 必须 ≥ 32 位
+- cert_serial_no + cert_private_key_path 不能为空
+- PARTNER 模式：parent_mch_id + sub_app_id 必填
+- DIRECT 模式：自动清空 parent_mch_id + sub_app_id
+
+#### 2. MerchantConfigController 8 个接口
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| `GET` | `/api/v1/merchant` | 列出所有启用的商户 |
+| `GET` | `/api/v1/merchant/{mchId}` | 查询单个商户配置 |
+| `GET` | `/api/v1/merchant/partner/list` | 列出所有服务商（mode=PARTNER）|
+| `GET` | `/api/v1/merchant/{partnerMchId}/subs` | 列出某服务商下的特约商户 |
+| `POST` | `/api/v1/merchant` | 创建商户（DIRECT 或 PARTNER） |
+| `PUT` | `/api/v1/merchant/{mchId}` | 更新商户配置 |
+| `DELETE` | `/api/v1/merchant/{mchId}` | 软删除商户 |
+| `POST` | `/api/v1/merchant/{mchId}/reload-config` | 手动预加载 Config |
+| `POST` | `/api/v1/merchant/cache/clear` | 清空 Config 缓存（调试用） |
+
+#### 3. E2E 验证
+
+| 场景 | 结果 |
+|---|---|
+| 列出所有商户 | ✅ 返回 1 条 DIRECT 商户 |
+| 列出服务商 | ✅ 空数组（未配置） |
+| 查询 1674723182 | ✅ 完整数据，含 v2.0.3 新字段 |
+| 创建 DIRECT 商户 | ✅ id=3 落库 |
+| 创建 PARTNER 服务商 | ✅ id=4，parent_mch_id=1000400645 |
+| 重复创建校验 | ✅ 400 + `mch_id 已存在` |
+| PARTNER 模式缺字段 | ✅ 400 + `PARTNER 模式必须配置 parent_mch_id` |
+| 软删除 | ✅ 删除成功，再查 404 |
+
+#### 4. 安全提示（待 v2.0.4 修复）
+
+- 🔴 `apiV3Key` 在响应中未脱敏（暴露给前端）
+- 🔴 `certSerialNo` 在响应中未脱敏
+- 建议：响应 DTO 单独建 `MerchantConfigResponse` 隐藏敏感字段
+
+---
+
+## v2.0.2 · 2026-09-16
+
+### Added · 已知 mchId 路由优化（PARTNER 模式回调性能）
+
+**目标**：v2.0.1 的 `parseWithFallback` 是 2 段（默认 + 遍历），多 Config 场景遍历 O(N) 太慢。v2.0.2 升级为 4 段。
+
+#### 1. 四段式路由策略
+
+```
+第 1 段：默认 Parser（O(1)）                  单 Config 场景必中
+  ↓ 失败
+第 2 段：历史 mchId 列表（O(K)，K ≤ 100）     从 t_pay_notify_log 查最近成功验签的 mchId
+  ↓ 失败
+第 3 段：遍历所有缓存 Parser（O(N)）          跳过 1/2 已尝试的
+  ↓ 失败
+第 4 段：返回 failure
+```
+
+**性能**：单 Config 场景 O(1)，多 Config 场景 O(K) ≪ O(N)
+
+#### 2. PayNotifyLogService.listRecentVerifiedMchIds
+
+```sql
+SELECT DISTINCT parent_mch_id
+FROM t_pay_notify_log
+WHERE verify_result = 'PASS'
+  AND parent_mch_id IS NOT NULL
+ORDER BY id DESC
+LIMIT ?
+```
+
+**为什么用 t_pay_notify_log 而不是 t_merchant_config？**
+- PARTNER 模式回调用服务商号签名，但服务端预先可能并不知道哪些服务商需要预加载
+- 历史回调用过的 mchId 才是最可靠的"已知活跃 mchId"候选
+- 历史数据天然按时间排序，最近活跃的最优先
+
+#### 3. NotificationParserManager.parseWithHistory
+
+```java
+ParseResult result = parserManager.parseWithHistory(param, String.class, 50);
+```
+
+参数：
+- `param`：SDK RequestParam（headers + body）
+- `target`：解析目标类型（一般是 String.class）
+- `historyLimit`：历史 mchId 查询条数（建议 50~100）
+
+返回：包含 `matchedMchId`、`body`、`errorMessage` 的 ParseResult
+
+#### 4. WechatNotifyController 集成
+
+替换 `parseWithFallback` 为 `parseWithHistory`，性能提升。
+
+#### 5. 单元测试（8/8 PASS）
+
+新增 2 个测试：
+- `parseWithHistoryEmpty`：缓存为空时返回 failure
+- `parseWithHistoryDefaultFail`：默认 Parser 失败时尝试历史 + 遍历
+
+```
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+```
+
+#### 6. E2E 验证
+
+```
+[ParserManager] 创建 parser: mchId=1674723182
+[ParserManager] 第 1 段尝试默认 Parser: signature verification failed
+[ParserManager] ❌ 所有 Parser 都验签失败 (历史=0, 缓存=1, 耗时=10ms)
+```
+
+10ms 完成路由 + 验签 + 落库，**包含 4 段路由的全部开销**。
+
+---
+
 ## v2.0.1 · 2026-09-16
 
 ### Added · NotificationController 智能路由（PARTNER 模式回调验签）

@@ -139,11 +139,12 @@ curl http://localhost:8080/api/health
 
 详见 [docs/changelog.md](docs/changelog.md)。
 
-最新版本：**v2.1**（2026-09-16）
+最新版本：**v2.0.3**（2026-09-16）
 
 | 日期 | 版本 | 摘要 |
 |---|---|---|
-| 2026-09-16 | v2.1 | **Hotel Booking 完整 Demo**：`design-preview/hotel/` 10 个页面闭环（首页→列表→详情→预订→支付→成功→订单中心→订单详情→我的→登录），保留 Starbucks 设计风格 |
+| 2026-09-16 | v2.0.3 | **服务商进件 + 商户 CRUD**：MerchantConfigController 9 个接口（CRUD + 列出服务商 + 列出子商户 + 手动预加载 Config + 清空缓存），MerchantConfigService 完备 PARTNER 校验 |
+| 2026-09-16 | v2.0.2 | **已知 mchId 路由优化**：NotificationParserManager 增加四段式路由（默认 → 历史 → 遍历兜底），WechatNotifyController 集成 parseWithHistory，8 个单元测试 PASS |
 | 2026-09-16 | v2.0.1 | **NotificationController 智能路由**：三段式 Parser 路由（默认→遍历兜底），6 个单元测试 PASS |
 | 2026-09-16 | v2.0-alpha | **服务商模式架构**：Flyway V6 增加 parent_mch_id/sub_mch_id/sub_app_id 字段 + 新增 WechatPayConfigManager（多 Config 缓存 + 路由）+ NotificationParserManager + RealService 自动适配 DIRECT/PARTNER |
 | 2026-09-16 | v1.6 | **REAL 模式全打通**：Native 下单/关单/退款链路全部走真实微信，修复 NativeController 默认商户号 + 退款前置校验 |
