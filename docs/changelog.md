@@ -13,6 +13,64 @@
 
 ---
 
+## v1.5 · 2026-09-16
+
+### Added · 拉起支付后主动轮询查单
+
+**背景**：微信支付回调地址暂无法配置（需要商户后台白名单 + 公网回调地址），改为**主动轮询查单**策略，绕过回调依赖。
+
+#### 1. Flyway V5：新增 next_query_at 字段
+
+- `t_pay_order` 增加 `next_query_at DATETIME(3)` + 索引
+- 语义：`next_query_at <= NOW()` 的订单将被 `PayOrderPollScheduler` 扫描查询
+
+#### 2. 新增 PayOrderPollScheduler（高频精准轮询）
+
+- 调度间隔：每 10 秒
+- 最多轮询：30 分钟（超过则停止，移交兜底查单）
+- 轮询策略（指数退避）：10s → 20s → 40s → 60s（封顶）
+- 终态到达（SUCCESS/CLOSED/REFUNDED/REVOKED）→ 自动停止轮询
+- MOCK 模式：仅推进 next_query_at，不调真实微信
+
+#### 3. Controller 下单成功后自动入队
+
+- `JsapiController.create`：调用 `jsapiService.create` 拿到 prepay_id 后立即 `payOrderService.enqueueQuery(orderId)`
+- 仅 REAL 模式入队（MOCK 不需要）
+
+#### 4. 修复：调真实微信查单时缺商户配置
+
+- 原 bug：调度器传 `new MerchantConfig()`（空对象），导致微信返回 400 PARAM_ERROR
+- 修复：`MerchantConfigService.getByMchId(order.getMchId())` 查真实商户
+- 同时修复 `PayOrderQueryScheduler`（兜底查单）
+
+#### 5. PayOrderService 新增方法
+
+- `listDueForQuery(now, limit)`：扫描 `next_query_at <= now` 的未支付订单
+- `enqueueQuery(orderId)`：设置 `next_query_at = NOW()`
+- `computeNextQueryTime(baseSeconds, queriedTimes)`：指数退避
+- `setNextQueryTime(orderId, nextQueryAt)`：推进 next_query_at + 更新 last_query_time
+
+#### 6. E2E 验证
+
+| 步骤 | 结果 | 时间线 |
+|---|---|---|
+| 下单 R20260916_POLL002 | ✅ | 09:00:28.092 |
+| 自动入队（next_query_at） | ✅ | 09:00:28.663 |
+| 调度器第 1 次查单 | ✅ | 09:00:30.184（2s 后） |
+| 微信返回 payStatus=NOTPAY | ✅ | 09:00:30.395 |
+| 推进 next_query_at=+20s | ✅ | 09:00:30.396 |
+| 调度器第 2 次查单 | ✅ | 09:00:50.500 |
+| 调度器第 3 次查单 | ✅ | 09:01:00.382 |
+| DB Row | ✅ | `next_query_at=2026-09-16 09:00:50.396`（在按预期推进） |
+
+### 设计权衡
+
+- ✅ **优点**：不依赖回调，配置简单，单笔订单失败不影响其他
+- ⚠️ **代价**：每 10 秒扫描一次 DB（索引已加，影响可控）
+- 🔄 **替代方案**：失败兜底 `PayOrderQueryScheduler`（30 分钟全表扫描兜底）
+
+---
+
 ## v1.4 · 2026-09-16
 
 ### Added · RealService 真实链路激活（直连商户 1674723182）

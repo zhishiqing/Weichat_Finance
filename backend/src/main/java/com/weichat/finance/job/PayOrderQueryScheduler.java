@@ -1,5 +1,6 @@
 package com.weichat.finance.job;
 
+import com.weichat.finance.entity.MerchantConfig;
 import com.weichat.finance.entity.PayOrder;
 import com.weichat.finance.entity.PayOrderQueryLog;
 import com.weichat.finance.entity.enums.OrderStatus;
@@ -7,6 +8,7 @@ import com.weichat.finance.entity.enums.PayStatus;
 import com.weichat.finance.payment.config.WechatPayProperties;
 import com.weichat.finance.payment.v3.jsapi.JsapiQueryResponse;
 import com.weichat.finance.payment.v3.jsapi.JsapiService;
+import com.weichat.finance.service.MerchantConfigService;
 import com.weichat.finance.service.PayOrderQueryLogService;
 import com.weichat.finance.service.PayOrderService;
 import com.weichat.finance.service.PayTransactionService;
@@ -74,6 +76,9 @@ public class PayOrderQueryScheduler {
 
     @Autowired
     private PayOrderQueryLogService payOrderQueryLogService;
+
+    @Autowired
+    private MerchantConfigService merchantConfigService;
 
     @Autowired
     private WechatPayProperties wechatPayProperties;
@@ -215,14 +220,20 @@ public class PayOrderQueryScheduler {
         log.debug("[查单兜底] 批次 {} 正在查: outTradeNo={}, 当前状态={}",
             batchNo, outTradeNo, order.getStatus());
 
+        // 获取真实商户配置（避免传 null 给 SDK）
+        MerchantConfig merchant = merchantConfigService.getByMchId(order.getMchId());
+        if (merchant == null) {
+            log.error("[查单兜底] 查不到商户配置: mchId={}", order.getMchId());
+            return;
+        }
+
         JsapiQueryResponse resp = null;
         Exception lastException = null;
 
         // 指数退避重试
         for (int retry = 0; retry < MAX_RETRIES; retry++) {
             try {
-                resp = jsapiService.queryByOutTradeNo(outTradeNo,
-                    new com.weichat.finance.entity.MerchantConfig());
+                resp = jsapiService.queryByOutTradeNo(outTradeNo, merchant);
                 break; // 成功，跳出重试循环
             } catch (Exception e) {
                 lastException = e;

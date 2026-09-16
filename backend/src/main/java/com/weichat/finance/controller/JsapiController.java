@@ -103,6 +103,14 @@ public class JsapiController {
         order.setStatus(OrderStatus.CREATED);
         payOrderService.updateById(order);
 
+        // v1.4 主动轮询：下单成功后立即入队（next_query_at = NOW()），PayOrderPollScheduler 会扫描查单
+        // 仅 REAL 模式需要轮询；MOCK 模式下 next_query_at 无意义但不会触发真实查询
+        if (response.getPrepayId() != null && !"MOCK".equalsIgnoreCase(response.getSource())) {
+            payOrderService.enqueueQuery(order.getId());
+            log.info("✅ 订单已入轮询队列: outTradeNo={}, orderId={}",
+                order.getOutTradeNo(), order.getId());
+        }
+
         return R.ok(response);
     }
 

@@ -89,6 +89,10 @@ public class PayOrder implements Serializable {
     @Schema(description = "最近一次定时查单时间（兜底用，避免同一批次重复查）", example = "2026-09-14T12:00:00")
     private LocalDateTime lastQueryTime;
 
+    @Schema(description = "下次轮询查单时间（v1.4 拉起支付后主动轮询，<= NOW() 的订单将被扫描）",
+        example = "2026-09-14T12:00:00")
+    private LocalDateTime nextQueryAt;
+
     @Schema(description = "创建时间（MyBatis-Plus 自动填充）", example = "2026-09-14T10:00:00", accessMode = Schema.AccessMode.READ_ONLY)
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime gmtCreate;
