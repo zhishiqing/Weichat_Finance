@@ -13,6 +13,65 @@
 
 ---
 
+## v1.4 · 2026-09-16
+
+### Added · RealService 真实链路激活（直连商户 1674723182）
+
+**重大里程碑**：从 MOCK 占位升级到 **真实 V3 API 调用**。
+
+#### 1. SDK 升级
+
+- `wechatpay-java` 0.2.12 → **0.2.17**（0.2.17 才有 `payments/jsapi/JsapiService` 直连版，0.2.12 只有 partnerpayments 服务商版）
+
+#### 2. 真实凭证接入
+
+- `backend/.env`：WX_PAY_MODE / WX_MCH_ID / WX_APP_ID / WX_API_V3_KEY / WX_CERT_SERIAL_NO / WX_CERT_PRIVATE_KEY_PATH（已被 .gitignore 忽略）
+- `backend/certs/apiclient_cert.pem` + `apiclient_key.pem`：从 `vx.pay/商户号1674723182` 拷贝（已被 .gitignore 忽略）
+- Flyway V4：占位商户配置 → 真实直连商户 `1674723182` / AppID `wx9d066e071d8e4e33` / APIv3 Key `wwx9d066e071X8687d3414bbfc7ad2fX`
+
+#### 3. WechatPayClientConfig 激活
+
+- `Config` Bean：基于 `RSAAutoCertificateConfig.Builder`，启动时**自动调用 GET /v3/certificates** 下载微信平台证书（无需手动管理证书）
+- `NotificationParser` Bean：回调验签 + 资源解密（AES-256-GCM）
+
+#### 4. 三个 RealService 全部激活
+
+- `RealJsapiService`：POST /v3/pay/transactions/jsapi（创建） + GET /v3/pay/transactions/out-trade-no/{out_trade_no}（查单） + POST .../close（关单）
+- `RealNativeService`：POST /v3/pay/transactions/native
+- `RealRefundService`：POST /v3/refund/domestic/refunds + GET /v3/refund/domestic/refunds/{out_refund_no}
+
+#### 5. 回调 Controller 升级
+
+- `WechatNotifyController`：激活验签 + 解密 + 业务回填
+- SIGNTEST 探测流量识别（保留）
+- 落库 + 验签 + 解密 + 幂等回填 t_pay_order.status=SUCCESS + t_pay_transaction.pay_status=SUCCESS
+
+#### 6. E2E 验证
+
+| 验证项 | 结果 |
+|---|---|
+| 启动加载真实凭证 | ✅ 日志 mchId=1674723182 |
+| 微信平台证书自动下载 | ✅ Wechatpay-Serial: 2939B4FD...（微信返回） |
+| REAL 模式启动 | ✅ 5 秒完成，无报错 |
+| 真实 HTTP 请求发出 | ✅ api.mch.weixin.qq.com/v3/pay/transactions/jsapi |
+| 签名认证通过 | ✅ WECHATPAY2-SHA256-RSA2048 头被微信接受 |
+| 业务响应（错误为 openid 无效，符合预期） | ✅ PARAM_ERROR 业务响应正常 |
+
+> 注：真实下单测试需真实用户的 openid 才能完成业务流；当前测试用示例 openid 验证了"链路打通"，但业务流（资金流）需要后续用真实商户场景测试。
+
+### Changed
+
+- `JsapiController.DEFAULT_MCH_ID` 从占位改为 `1674723182`
+- `PayOrderQueryScheduler` error_message 截断 1000 字符（DB VARCHAR(1024) 兜底）
+
+### 安全
+
+- ✅ `.env` 和 `backend/certs/` 已被 .gitignore 忽略
+- ✅ 商户私钥从未写入代码或日志
+- ✅ 启动日志仅打印 mchId/appId/certSerial，不打印密钥或私钥内容
+
+---
+
 ## v1.3 · 2026-09-15
 
 ### Added · MDC traceId 日志串联 + 对账模块

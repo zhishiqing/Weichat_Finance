@@ -189,7 +189,12 @@ public class PayOrderQueryScheduler {
         queryLog.setClosedCount(closedCount.get());
         queryLog.setUpdatedCount(updatedCount.get());
         queryLog.setCostMs(costMs);
-        queryLog.setErrorMessage(worstError.get());
+        // 截断到 1000 字符（DB 字段 VARCHAR(1024)，预留余量）
+        String err = worstError.get();
+        if (err != null && err.length() > 1000) {
+            err = err.substring(0, 1000) + "...";
+        }
+        queryLog.setErrorMessage(err);
         payOrderQueryLogService.save(queryLog);
 
         log.info("[查单兜底] 批次 {} 完成，扫描={} 查询={} 成功={} 失败={} " +

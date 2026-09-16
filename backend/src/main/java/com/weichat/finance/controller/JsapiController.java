@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class JsapiController {
 
     private static final Logger log = LoggerFactory.getLogger(JsapiController.class);
-    private static final String DEFAULT_MCH_ID = "PLACEHOLDER_MCH_ID";
+    private static final String DEFAULT_MCH_ID = "1674723182";
 
     private final JsapiService jsapiService;
     private final MerchantConfigService merchantConfigService;

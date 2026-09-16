@@ -28,8 +28,8 @@
         <flyway.version>10.20.1</flyway.version>
         <!-- MySQL Connector/J 8.x -->
         <mysql-connector.version>8.4.0</mysql-connector.version>
-        <!-- 微信支付 V3 官方 Java SDK（Phase 2 引入，锁 0.2.12 兼容本地已缓存 jar） -->
-        <wechatpay.version>0.2.12</wechatpay.version>
+        <!-- 微信支付 V3 官方 Java SDK（v0.2.17 含直连商户 payments/jsapi/JsapiService） -->
+        <wechatpay.version>0.2.17</wechatpay.version>
     </properties>
 
     <dependencies>
