@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>订单中心 · Hotel Booking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page { max-width: 96rem; margin: 0 auto; padding: var(--space-5) var(--space-3); }
+
+.page-title { font-size: 2.8rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-4); }
+
+.tabs-bar {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: 0 var(--space-4);
+  display: flex;
+  gap: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+.tab-item { padding: var(--space-3) 0; font-size: 1.5rem; font-weight: 500; color: var(--text-black-soft); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s ease; }
+.tab-item:hover { color: var(--text-black); }
+.tab-item.active { color: var(--starbucks-green); border-bottom-color: var(--starbucks-green); font-weight: 600; }
+.tab-item .badge { display: inline-block; background: var(--green-light); color: var(--starbucks-green); padding: 2px 8px; border-radius: 10px; font-size: 1.1rem; margin-left: 4px; font-weight: 600; }
+
+.order-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.order-card {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--space-4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.order-card:hover { transform: translateY(-2px); box-shadow: var(--hover-shadow); }
+.order-card:active { transform: scale(0.99); }
+.order-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-2); margin-bottom: var(--space-3); border-bottom: 1px solid var(--ceramic); }
+.order-id { font-size: 1.2rem; color: var(--text-black-soft); }
+.order-status { font-size: 1.3rem; font-weight: 600; padding: 0.4rem 1rem; border-radius: var(--chip-radius); }
+.status-UNPAID { background: var(--yellow); color: #fff; }
+.status-PAID { background: var(--green-accent); color: #fff; }
+.status-CHECKED_IN { background: var(--starbucks-green); color: #fff; }
+.status-COMPLETED { background: var(--neutral-cool); color: var(--text-black-soft); }
+.status-CANCELLED, .status-EXPIRED, .status-REFUNDED { background: var(--red); color: #fff; }
+
+.order-body { display: flex; gap: var(--space-4); margin-bottom: var(--space-3); }
+.order-cover { width: 14rem; height: 10rem; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.order-info { flex: 1; }
+.order-hotel-name { font-size: 1.7rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-1); }
+.order-hotel-meta { font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-2); }
+.order-detail-line { font-size: 1.3rem; color: var(--text-black); margin-bottom: 0.4rem; }
+.order-detail-line .label { color: var(--text-black-soft); }
+
+.order-footer { display: flex; justify-content: space-between; align-items: end; padding-top: var(--space-3); border-top: 1px solid var(--ceramic); }
+.order-price-info { font-size: 1.3rem; color: var(--text-black-soft); }
+.order-price-num { font-size: 2rem; font-weight: 700; color: var(--starbucks-green); }
+.order-actions { display: flex; gap: var(--space-2); }
+.order-actions button { height: 3.6rem; padding: 0 var(--space-3); font-size: 1.3rem; }
+
+.empty-state { padding: var(--space-7) var(--space-3); text-align: center; color: var(--text-black-soft); }
+.empty-state .emoji { font-size: 6rem; margin-bottom: var(--space-3); opacity: 0.5; }
+.empty-state .text { font-size: 1.6rem; margin-bottom: var(--space-4); }
+
+@media (max-width: 768px) {
+  .order-body { flex-direction: column; }
+  .order-cover { width: 100%; height: 18rem; }
+  .order-footer { flex-direction: column; gap: var(--space-3); align-items: stretch; }
+  .order-actions { justify-content: stretch; }
+  .order-actions button { flex: 1; }
+}
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+  <h1 class="page-title">我的订单</h1>
+
+  <div class="tabs-bar">
+    <div class="tab-item active" data-tab="all" onclick="switchTab('all')">全部 <span class="badge" id="badge-all">0</span></div>
+    <div class="tab-item" data-tab="unpaid" onclick="switchTab('unpaid')">待支付 <span class="badge" id="badge-unpaid">0</span></div>
+    <div class="tab-item" data-tab="paid" onclick="switchTab('paid')">已支付 <span class="badge" id="badge-paid">0</span></div>
+    <div class="tab-item" data-tab="completed" onclick="switchTab('completed')">已完成 <span class="badge" id="badge-completed">0</span></div>
+    <div class="tab-item" data-tab="cancelled" onclick="switchTab('cancelled')">已取消 <span class="badge" id="badge-cancelled">0</span></div>
+  </div>
+
+  <div id="orderList"></div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon('orders');
+
+let currentTab = 'all';
+
+const statusLabels = {
+  UNPAID: '待支付',
+  PAID: '已确认',
+  CHECKED_IN: '入住中',
+  COMPLETED: '已完成',
+  CANCELLED: '已取消',
+  EXPIRED: '已超时',
+  REFUNDED: '已退款',
+};
+
+const statusFilter = {
+  all: null,
+  unpaid: ['UNPAID'],
+  paid: ['PAID', 'CHECKED_IN'],
+  completed: ['COMPLETED'],
+  cancelled: ['CANCELLED', 'EXPIRED', 'REFUNDED'],
+};
+
+function renderList() {
+  if (!requireLogin()) return;
+  const all = OrderStore.list();
+  const list = statusFilter[currentTab] ? all.filter(o => statusFilter[currentTab].includes(o.status)) : all;
+
+  // 更新 badge
+  ['all', 'unpaid', 'paid', 'completed', 'cancelled'].forEach(t => {
+    const cnt = statusFilter[t] ? all.filter(o => statusFilter[t].includes(o.status)).length : all.length;
+    document.getElementById('badge-' + t).textContent = cnt;
+  });
+
+  if (list.length === 0) {
+    document.getElementById('orderList').innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">📭</div>
+        <div class="text">${currentTab === 'all' ? '暂无订单' : '此分类下暂无订单'}</div>
+        <button class="btn-primary" onclick="location.href='index.html'">去预订</button>
+      </div>
+    `;
+    return;
+  }
+
+  document.getElementById('orderList').innerHTML = list.map(o => `
+    <div class="order-card" onclick="location.href='order-detail.html?oid=${o.id}'">
+      <div class="order-header">
+        <div class="order-id">订单号：${o.id} · ${fmtDateTime(o.createTime)}</div>
+        <span class="order-status status-${o.status}">${statusLabels[o.status] || o.status}</span>
+      </div>
+      <div class="order-body">
+        <img class="order-cover" src="${o.hotelCover}" alt="" onerror="this.style.background='linear-gradient(135deg,var(--ceramic),var(--neutral-warm))'">
+        <div class="order-info">
+          <div class="order-hotel-name">${o.hotelName}</div>
+          <div class="order-hotel-meta">📍 ${o.hotelCity} · ${o.hotelDistrict}</div>
+          <div class="order-detail-line"><span class="label">房型：</span>${o.roomType}</div>
+          <div class="order-detail-line"><span class="label">入住：</span>${fmtDate(o.checkIn)} → ${fmtDate(o.checkOut)} · ${o.nights} 晚</div>
+          <div class="order-detail-line"><span class="label">入住人：</span>${o.guestName} · ${o.guestPhone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}</div>
+        </div>
+      </div>
+      <div class="order-footer">
+        <div class="order-price-info">
+          共 ${o.nights} 晚<br>
+          <span class="order-price-num">¥${o.price}</span>
+        </div>
+        <div class="order-actions" onclick="event.stopPropagation()">
+          ${o.status === 'UNPAID' ? `<button class="btn-primary btn-sm" onclick="location.href='payment.html?oid=${o.id}'">去支付</button><button class="btn-ghost btn-sm" onclick="cancelOrder('${o.id}')">取消</button>` : ''}
+          ${o.status === 'PAID' ? `<button class="btn-outline btn-sm" onclick="rebook('${o.id}')">再次预订</button><button class="btn-ghost btn-sm" onclick="cancelOrder('${o.id}')">申请退款</button>` : ''}
+          ${o.status === 'COMPLETED' || o.status === 'CHECKED_IN' ? `<button class="btn-outline btn-sm" onclick="rebook('${o.id}')">再次预订</button>` : ''}
+          ${o.status === 'CANCELLED' || o.status === 'EXPIRED' || o.status === 'REFUNDED' ? `<button class="btn-outline btn-sm" onclick="rebook('${o.id}')">再次预订</button><button class="btn-ghost btn-sm" onclick="deleteOrder('${o.id}')">删除</button>` : ''}
+          <button class="btn-ghost btn-sm" onclick="location.href='order-detail.html?oid=${o.id}'">详情</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function switchTab(t) {
+  currentTab = t;
+  document.querySelectorAll('.tab-item').forEach(el => el.classList.toggle('active', el.dataset.tab === t));
+  renderList();
+}
+
+function cancelOrder(id) {
+  if (!confirm('确认取消订单？')) return;
+  OrderStore.update(id, { status: 'CANCELLED', cancelTime: new Date().toISOString() });
+  toast('订单已取消');
+  renderList();
+}
+
+function deleteOrder(id) {
+  if (!confirm('确认删除订单？删除后不可恢复')) return;
+  const orders = OrderStore.list().filter(o => o.id !== id);
+  OrderStore.save(orders);
+  toast('订单已删除');
+  renderList();
+}
+
+function rebook(id) {
+  const order = OrderStore.get(id);
+  setCart({ hotelId: order.hotelId, roomId: order.roomId, price: order.price, checkIn: '2026-09-16', checkOut: '2026-09-17', guests: 2 });
+  location.href = 'booking.html';
+}
+
+renderList();
+</script>
+
+</body>
+</html>

@@ -135,10 +135,11 @@ curl http://localhost:8080/api/health
 
 详见 [docs/changelog.md](docs/changelog.md)。
 
-最新版本：**v2.0-alpha**（2026-09-16）
+最新版本：**v2.0.1**（2026-09-16）
 
 | 日期 | 版本 | 摘要 |
 |---|---|---|
+| 2026-09-16 | v2.0.1 | **NotificationController 智能路由**：三段式 Parser 路由（默认→遍历兜底），6 个单元测试 PASS |
 | 2026-09-16 | v2.0-alpha | **服务商模式架构**：Flyway V6 增加 parent_mch_id/sub_mch_id/sub_app_id 字段 + 新增 WechatPayConfigManager（多 Config 缓存 + 路由）+ NotificationParserManager + RealService 自动适配 DIRECT/PARTNER |
 | 2026-09-16 | v1.6 | **REAL 模式全打通**：Native 下单/关单/退款链路全部走真实微信，修复 NativeController 默认商户号 + 退款前置校验 |
 | 2026-09-16 | v1.5.1 | **轮询频率提升到 3 秒**：用户要求拉起支付后 3 秒一次查单（调度器 + 单笔订单轮询） |

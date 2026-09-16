@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>预订成功 · Hotel Booking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.success-hero {
+  background: linear-gradient(135deg, var(--house-green) 0%, var(--green-uplift) 100%);
+  color: var(--text-white);
+  padding: var(--space-7) var(--space-3);
+  text-align: center;
+}
+.success-checkmark {
+  width: 10rem;
+  height: 10rem;
+  margin: 0 auto var(--space-4);
+  border-radius: 50%;
+  background: var(--green-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 6px rgba(0,0,0,0.24), 0 8px 12px rgba(0,0,0,0.14);
+  animation: pop-in 0.6s cubic-bezier(0.32, 2.32, 0.61, 0.27);
+}
+@keyframes pop-in {
+  0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+  60% { transform: scale(1.1) rotate(0); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.success-checkmark svg { width: 5rem; height: 5rem; color: var(--white); }
+.success-title { font-size: 3.2rem; font-weight: 600; margin-bottom: var(--space-2); }
+.success-subtitle { font-size: 1.6rem; color: var(--text-white-soft); }
+
+.page { max-width: 60rem; margin: 0 auto; padding: var(--space-5) var(--space-3) var(--space-7); }
+.detail-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-5); margin-bottom: var(--space-4); }
+
+.hotel-summary { display: flex; gap: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ceramic); margin-bottom: var(--space-4); }
+.hotel-summary img { width: 12rem; height: 12rem; border-radius: 8px; object-fit: cover; }
+.hotel-summary-info { flex: 1; }
+.hotel-summary-name { font-size: 2rem; font-weight: 600; margin-bottom: var(--space-1); color: var(--text-black); }
+.hotel-summary-meta { font-size: 1.4rem; color: var(--text-black-soft); margin-bottom: var(--space-2); }
+.hotel-summary-room { padding: 0.4rem 1rem; background: var(--green-light); color: var(--starbucks-green); border-radius: var(--chip-radius); font-size: 1.3rem; font-weight: 500; display: inline-block; }
+
+.detail-row { display: flex; justify-content: space-between; padding: var(--space-2) 0; font-size: 1.4rem; }
+.detail-label { color: var(--text-black-soft); }
+.detail-value { color: var(--text-black); font-weight: 500; }
+.detail-value.mono { font-family: monospace; font-size: 1.3rem; }
+.copy-btn { background: transparent; border: 1px solid var(--green-accent); color: var(--green-accent); padding: 0.2rem 0.8rem; border-radius: 0.4rem; font-size: 1.2rem; margin-left: 0.4rem; cursor: pointer; }
+.copy-btn:hover { background: var(--green-light); }
+
+.coupon-banner { background: linear-gradient(135deg, var(--gold-lightest) 0%, var(--gold-light) 100%); border-radius: var(--card-radius); padding: var(--space-4); display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); border: 2px dashed var(--gold); }
+.coupon-icon { font-size: 3rem; }
+.coupon-text { flex: 1; }
+.coupon-title { font-size: 1.5rem; font-weight: 600; color: var(--starbucks-green); }
+.coupon-desc { font-size: 1.3rem; color: var(--text-black-soft); margin-top: 0.2rem; }
+.coupon-btn { background: var(--gold); color: var(--white); padding: 0.6rem 1.4rem; border-radius: var(--chip-radius); font-size: 1.3rem; font-weight: 600; }
+.coupon-btn:hover { background: var(--starbucks-green); }
+
+.actions { display: flex; gap: var(--space-3); }
+.actions .btn-primary { flex: 1; }
+.actions .btn-outline { flex: 1; }
+
+.tips { background: var(--neutral-cool); padding: var(--space-3); border-radius: 8px; font-size: 1.3rem; color: var(--text-black); margin-top: var(--space-4); }
+.tips-title { font-weight: 600; margin-bottom: var(--space-2); }
+.tips li { padding: 0.4rem 0; list-style: none; }
+.tips li::before { content: '✓ '; color: var(--green-accent); font-weight: 700; }
+
+@media (max-width: 768px) {
+  .success-title { font-size: 2.4rem; }
+  .hotel-summary { flex-direction: column; }
+  .hotel-summary img { width: 100%; height: 18rem; }
+  .actions { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<section class="success-hero">
+  <div class="success-checkmark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="5 12 10 17 19 8"></polyline>
+    </svg>
+  </div>
+  <h1 class="success-title">预订成功</h1>
+  <p class="success-subtitle">订单已确认，期待您的入住 ✨</p>
+</section>
+
+<main class="page">
+
+  <div class="coupon-banner">
+    <div class="coupon-icon">🎁</div>
+    <div class="coupon-text">
+      <div class="coupon-title">恭喜获得 ¥80 优惠券</div>
+      <div class="coupon-desc">下次预订满 ¥500 可用 · 有效期 30 天</div>
+    </div>
+    <button class="coupon-btn" onclick="toast('优惠券已发放到您的账户')">立即领取</button>
+  </div>
+
+  <div class="detail-card">
+    <div class="hotel-summary">
+      <img id="hThumb" src="" alt="">
+      <div class="hotel-summary-info">
+        <div class="hotel-summary-name" id="hName"></div>
+        <div class="hotel-summary-meta" id="hMeta"></div>
+        <span class="hotel-summary-room" id="hRoom"></span>
+      </div>
+    </div>
+
+    <div class="detail-row"><span class="detail-label">订单号</span><span class="detail-value mono" id="oid"></span><button class="copy-btn" onclick="copyText(document.getElementById('oid').textContent)">复制</button></div>
+    <div class="detail-row"><span class="detail-label">入住日期</span><span class="detail-value">2026年9月16日（周二）· 15:00 后</span></div>
+    <div class="detail-row"><span class="detail-label">离店日期</span><span class="detail-value">2026年9月17日（周三）· 12:00 前</span></div>
+    <div class="detail-row"><span class="detail-label">共计</span><span class="detail-value">1 晚 · 2 成人</span></div>
+    <div class="detail-row"><span class="detail-label">入住人</span><span class="detail-value" id="guestName"></span></div>
+    <div class="detail-row"><span class="detail-label">联系电话</span><span class="detail-value mono" id="guestPhone"></span></div>
+    <div class="detail-row"><span class="detail-label">特殊需求</span><span class="detail-value" id="requests">无</span></div>
+    <div class="detail-row"><span class="detail-label">支付方式</span><span class="detail-value" id="payMethod"></span></div>
+    <div class="detail-row"><span class="detail-label">支付时间</span><span class="detail-value mono" id="payTime"></span></div>
+    <div class="detail-row"><span class="detail-label">交易状态</span><span class="detail-value" style="color:var(--green-accent)"><span style="display:inline-block;width:0.6rem;height:0.6rem;border-radius:50%;background:var(--green-accent);margin-right:0.4rem;"></span>支付成功</span></div>
+    <div class="detail-row" style="border-top:1px solid var(--ceramic);margin-top:var(--space-2);padding-top:var(--space-3);">
+      <span class="detail-label" style="font-weight:600;color:var(--text-black);">订单总额</span>
+      <span class="detail-value" style="font-size:2.4rem;font-weight:700;color:var(--starbucks-green)" id="total"></span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-outline btn-lg" onclick="location.href='order-detail.html?oid='+oid">查看订单详情</button>
+    <button class="btn-primary btn-lg" onclick="location.href='orders.html'">返回订单中心</button>
+  </div>
+
+  <div class="tips">
+    <div class="tips-title">温馨提示</div>
+    <ul>
+      <li>入住当日凭预订人有效身份证件办理入住</li>
+      <li>如需变更或取消订单，请前往"订单中心"操作</li>
+      <li>该订单支持<strong>免费取消</strong>，入住日 18:00 前可操作</li>
+      <li>如有疑问请联系客服 400-100-1234</li>
+    </ul>
+  </div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon();
+
+const oid = URL.get('oid');
+const order = OrderStore.get(oid);
+if (!order) document.body.innerHTML = '<p style="padding:4rem">订单不存在</p>';
+
+window.oid = order.id;
+
+document.getElementById('hThumb').src = order.hotelCover;
+document.getElementById('hName').textContent = order.hotelName;
+document.getElementById('hMeta').textContent = `${order.hotelCity} · ${order.hotelDistrict}`;
+document.getElementById('hRoom').textContent = order.roomType;
+document.getElementById('oid').textContent = order.id;
+document.getElementById('guestName').textContent = order.guestName;
+document.getElementById('guestPhone').textContent = order.guestPhone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+document.getElementById('requests').textContent = order.requests && order.requests.length ? order.requests.join('、') : '无';
+document.getElementById('payMethod').textContent = order.payMethod || '微信支付';
+document.getElementById('payTime').textContent = fmtDateTime(order.payTime);
+document.getElementById('total').textContent = `¥${order.price}`;
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('已复制到剪贴板'));
+}
+</script>
+
+</body>
+</html>

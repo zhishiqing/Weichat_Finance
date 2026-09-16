@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>填写预订 · Hotel Booking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page { max-width: 120rem; margin: 0 auto; padding: var(--space-5) var(--space-3); }
+.breadcrumb { font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-3); }
+.breadcrumb a { color: var(--green-accent); }
+
+.layout { display: grid; grid-template-columns: 1fr 36rem; gap: var(--space-4); }
+
+.section-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); margin-bottom: var(--space-3); }
+.section-title { font-size: 1.8rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--ceramic); display: flex; align-items: center; gap: var(--space-2); }
+.section-num { width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--green-accent); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; }
+
+.date-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-3); }
+.date-card { padding: var(--space-3); border: 2px solid var(--ceramic); border-radius: 8px; text-align: center; transition: all 0.2s ease; }
+.date-card:hover { border-color: var(--green-accent); }
+.date-label { font-size: 1.2rem; color: var(--text-black-soft); margin-bottom: var(--space-1); }
+.date-value { font-size: 1.8rem; font-weight: 600; color: var(--text-black); }
+
+.guests-row { display: flex; gap: var(--space-3); }
+.guest-stepper { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border: 1px solid #d6dbde; border-radius: 0.4rem; }
+.guest-stepper button { width: 3rem; height: 3rem; border-radius: 50%; background: var(--neutral-cool); color: var(--green-accent); font-size: 1.6rem; font-weight: 700; }
+.guest-stepper button:active { transform: scale(0.9); }
+.guest-stepper button:disabled { opacity: 0.4; cursor: not-allowed; }
+.guest-stepper .count { min-width: 4rem; text-align: center; font-weight: 600; }
+
+.requests { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.req-chip { padding: 0.6rem 1.4rem; border: 1px solid var(--ceramic); border-radius: var(--chip-radius); font-size: 1.3rem; cursor: pointer; background: var(--white); transition: all 0.2s ease; }
+.req-chip:hover { border-color: var(--green-accent); }
+.req-chip.active { background: var(--green-accent); color: var(--white); border-color: var(--green-accent); }
+
+/* 右侧订单摘要 */
+.summary-card { position: sticky; top: 9.2rem; height: fit-content; }
+.hotel-thumb { display: flex; gap: var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--ceramic); margin-bottom: var(--space-3); }
+.hotel-thumb img { width: 9rem; height: 9rem; border-radius: 8px; object-fit: cover; }
+.hotel-thumb-info { flex: 1; }
+.hotel-thumb-name { font-size: 1.5rem; font-weight: 600; color: var(--text-black); margin-bottom: 0.4rem; }
+.hotel-thumb-meta { font-size: 1.2rem; color: var(--text-black-soft); }
+
+.summary-row { display: flex; justify-content: space-between; padding: 0.6rem 0; font-size: 1.4rem; }
+.summary-row.total { border-top: 1px solid var(--ceramic); margin-top: var(--space-2); padding-top: var(--space-3); font-size: 1.8rem; font-weight: 700; }
+.summary-row.total .price { color: var(--starbucks-green); font-size: 2.4rem; }
+
+.guarantee-info { background: var(--gold-lightest); padding: var(--space-3); border-radius: 8px; font-size: 1.3rem; color: var(--text-black); margin-top: var(--space-3); }
+.guarantee-info strong { color: var(--starbucks-green); }
+
+.pay-method { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.pay-chip { padding: 0.8rem 1.4rem; border: 2px solid var(--ceramic); border-radius: 8px; font-size: 1.3rem; cursor: pointer; }
+.pay-chip:hover { border-color: var(--green-accent); }
+.pay-chip.active { border-color: var(--green-accent); background: var(--green-light); color: var(--starbucks-green); font-weight: 600; }
+
+.agreement { display: flex; align-items: center; gap: var(--space-2); font-size: 1.3rem; color: var(--text-black-soft); margin: var(--space-3) 0; }
+.agreement input { width: 1.6rem; height: 1.6rem; accent-color: var(--green-accent); }
+.agreement a { color: var(--green-accent); }
+
+@media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } .summary-card { position: static; } }
+@media (max-width: 768px) { .date-grid { grid-template-columns: 1fr; } .guests-row { flex-direction: column; } }
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+  <div class="breadcrumb">
+    <a href="index.html">首页</a> / <a href="javascript:history.back()">酒店详情</a> / <span>填写预订</span>
+  </div>
+
+  <div class="layout">
+
+    <div>
+      <!-- 日期 + 房客 -->
+      <div class="section-card">
+        <h2 class="section-title"><span class="section-num">1</span>入住信息</h2>
+        <div class="date-grid">
+          <div class="date-card">
+            <div class="date-label">入住</div>
+            <div class="date-value">9月16日</div>
+            <div class="text-xs text-soft mt-1">15:00 后</div>
+          </div>
+          <div class="date-card">
+            <div class="date-label">离店</div>
+            <div class="date-value">9月17日</div>
+            <div class="text-xs text-soft mt-1">12:00 前</div>
+          </div>
+          <div class="date-card" style="background:var(--green-light); border-color:var(--green-accent);">
+            <div class="date-label">共计</div>
+            <div class="date-value" style="color:var(--starbucks-green)">1 晚</div>
+            <div class="text-xs text-soft mt-1">2 成人</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 入住人 -->
+      <div class="section-card">
+        <h2 class="section-title"><span class="section-num">2</span>入住人</h2>
+        <div class="row gap-3">
+          <div class="col form-group">
+            <input type="text" class="form-input" id="guestName" placeholder=" " value="张三" required>
+            <label class="form-label">中文姓名</label>
+          </div>
+          <div class="col form-group">
+            <input type="text" class="form-input" id="guestId" placeholder=" " value="330106199001011234" required>
+            <label class="form-label">身份证号</label>
+          </div>
+        </div>
+        <div class="row gap-3 mt-2">
+          <div class="col form-group">
+            <input type="tel" class="form-input" id="guestPhone" placeholder=" " value="13800138000" required>
+            <label class="form-label">手机号</label>
+          </div>
+          <div class="col form-group">
+            <input type="email" class="form-input" id="guestEmail" placeholder=" " value="[email protected]">
+            <label class="form-label">邮箱（可选）</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 偏好 -->
+      <div class="section-card">
+        <h2 class="section-title"><span class="section-num">3</span>特殊需求（可选）</h2>
+        <div class="requests">
+          <div class="req-chip" onclick="toggleReq(this)">无烟房</div>
+          <div class="req-chip" onclick="toggleReq(this)">高楼层</div>
+          <div class="req-chip" onclick="toggleReq(this)">大床</div>
+          <div class="req-chip" onclick="toggleReq(this)">双床</div>
+          <div class="req-chip" onclick="toggleReq(this)">加婴儿床</div>
+          <div class="req-chip" onclick="toggleReq(this)">延迟退房</div>
+          <div class="req-chip" onclick="toggleReq(this)">女性优先</div>
+        </div>
+        <div class="form-group mt-3">
+          <textarea class="form-textarea" id="remarks" placeholder=" " rows="2"></textarea>
+          <label class="form-label">其他备注（200字内）</label>
+        </div>
+      </div>
+
+      <!-- 担保 -->
+      <div class="section-card">
+        <h2 class="section-title"><span class="section-num">4</span>担保方式</h2>
+        <div class="pay-method" id="guaranteeMethod">
+          <div class="pay-chip active" onclick="selectGuarantee(this, 'online')">在线担保（信用卡）</div>
+          <div class="pay-chip" onclick="selectGuarantee(this, 'arrival')">到店付款</div>
+          <div class="pay-chip" onclick="selectGuarantee(this, 'prepay')">预付全款</div>
+        </div>
+        <div class="guarantee-info">
+          💡 <strong>免费取消</strong> · 入住日 18:00 前可免费取消
+        </div>
+      </div>
+
+      <!-- 增值服务 -->
+      <div class="section-card">
+        <h2 class="section-title"><span class="section-num">5</span>增值服务（可选）</h2>
+        <label style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0;cursor:pointer;">
+          <input type="checkbox" style="width:1.8rem;height:1.8rem;accent-color:var(--green-accent);">
+          <div style="flex:1">
+            <div style="font-size:1.5rem;font-weight:500;">机场接送</div>
+            <div style="font-size:1.2rem;color:var(--text-black-soft);">豪华商务车 · 含司机 · 60公里</div>
+          </div>
+          <div style="font-size:1.6rem;font-weight:700;color:var(--starbucks-green)">¥288</div>
+        </label>
+        <label style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0;border-top:1px solid var(--ceramic);cursor:pointer;">
+          <input type="checkbox" style="width:1.8rem;height:1.8rem;accent-color:var(--green-accent);">
+          <div style="flex:1">
+            <div style="font-size:1.5rem;font-weight:500;">早餐升级</div>
+            <div style="font-size:1.2rem;color:var(--text-black-soft);">双人自助早餐 · 含中西式</div>
+          </div>
+          <div style="font-size:1.6rem;font-weight:700;color:var(--starbucks-green)">¥158</div>
+        </label>
+      </div>
+
+      <!-- 支付方式 -->
+      <div class="section-card">
+        <h2 class="section-title"><span class="section-num">6</span>支付方式</h2>
+        <div class="pay-method" id="payMethod">
+          <div class="pay-chip active" onclick="selectPay(this, 'wechat')">
+            <span style="font-size:1.6rem">💚</span> 微信支付
+          </div>
+          <div class="pay-chip" onclick="selectPay(this, 'alipay')">
+            <span style="font-size:1.6rem">💙</span> 支付宝
+          </div>
+          <div class="pay-chip" onclick="selectPay(this, 'card')">
+            <span style="font-size:1.6rem">💳</span> 银行卡
+          </div>
+          <div class="pay-chip" onclick="selectPay(this, 'balance')">
+            <span style="font-size:1.6rem">💰</span> 余额（可用 ¥2,580）
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧订单摘要 -->
+    <aside>
+      <div class="card summary-card">
+        <div style="padding:var(--space-4);">
+          <div class="hotel-thumb">
+            <img id="hThumb" src="" alt="">
+            <div class="hotel-thumb-info">
+              <div class="hotel-thumb-name" id="hName"></div>
+              <div class="hotel-thumb-meta" id="hMeta"></div>
+            </div>
+          </div>
+
+          <div class="text-sm text-soft mb-2">订单信息</div>
+          <div class="summary-row"><span>房型</span><span id="sumRoom"></span></div>
+          <div class="summary-row"><span>入住</span><span>9月16日</span></div>
+          <div class="summary-row"><span>离店</span><span>9月17日</span></div>
+          <div class="summary-row"><span>共计</span><span>1 晚 · 2 成人</span></div>
+
+          <div class="text-sm text-soft mt-3 mb-2">费用明细</div>
+          <div class="summary-row"><span>房费</span><span id="sumRoomFee"></span></div>
+          <div class="summary-row"><span>税费</span><span>¥0</span></div>
+          <div class="summary-row"><span>折扣</span><span style="color:var(--red)">-¥0</span></div>
+
+          <div class="summary-row total"><span>应付总额</span><span class="price" id="sumTotal"></span></div>
+
+          <label class="agreement">
+            <input type="checkbox" id="agreeChk" checked>
+            我已阅读并同意 <a href="#">《预订协议》</a> 和 <a href="#">《隐私政策》</a>
+          </label>
+
+          <button class="btn-primary btn-lg btn-block" onclick="submitBooking()">提交订单 · ¥<span id="submitPrice"></span></button>
+          <div class="text-xs text-soft text-center mt-2">点击提交即表示同意上述条款</div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon();
+
+const cart = getCart();
+const hotel = getHotel(cart.hotelId);
+const room = getRoom(cart.hotelId, cart.roomId);
+
+if (!hotel || !room) {
+  document.body.innerHTML = '<p style="padding:4rem">订单信息不完整</p>';
+}
+
+document.getElementById('hThumb').src = hotel.cover;
+document.getElementById('hName').textContent = hotel.nameCn;
+document.getElementById('hMeta').textContent = `${hotel.city} · ${hotel.district} · ${room.type}`;
+document.getElementById('sumRoom').textContent = room.type;
+document.getElementById('sumRoomFee').textContent = `¥${room.price}`;
+document.getElementById('sumTotal').textContent = `¥${room.price}`;
+document.getElementById('submitPrice').textContent = room.price;
+
+function toggleReq(el) { el.classList.toggle('active'); }
+function selectPay(el, key) {
+  document.querySelectorAll('#payMethod .pay-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function selectGuarantee(el, key) {
+  document.querySelectorAll('#guaranteeMethod .pay-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function submitBooking() {
+  if (!requireLogin()) return;
+  if (!document.getElementById('agreeChk').checked) {
+    toast('请先同意协议');
+    return;
+  }
+  const guestName = document.getElementById('guestName').value.trim();
+  const guestId = document.getElementById('guestId').value.trim();
+  const guestPhone = document.getElementById('guestPhone').value.trim();
+  if (!guestName || !guestId || !guestPhone) {
+    toast('请完整填写入住人信息');
+    return;
+  }
+  if (!/^1\d{10}$/.test(guestPhone)) {
+    toast('请输入正确的手机号');
+    return;
+  }
+
+  // 创建订单
+  const order = OrderStore.add({
+    hotelId: hotel.id,
+    hotelName: hotel.nameCn,
+    hotelCover: hotel.cover,
+    hotelCity: hotel.city,
+    hotelDistrict: hotel.district,
+    roomId: room.id,
+    roomType: room.type,
+    price: room.price,
+    nights: 1,
+    checkIn: '2026-09-16',
+    checkOut: '2026-09-17',
+    guests: 2,
+    guestName,
+    guestId,
+    guestPhone,
+    guestEmail: document.getElementById('guestEmail').value,
+    requests: [...document.querySelectorAll('.req-chip.active')].map(c => c.textContent),
+    remarks: document.getElementById('remarks').value,
+    status: 'UNPAID',
+  });
+
+  toast('订单创建成功');
+  setTimeout(() => location.href = `payment.html?oid=${order.id}`, 800);
+}
+</script>
+
+</body>
+</html>

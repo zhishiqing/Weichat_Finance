@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · Hotel Booking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5) var(--space-3);
+}
+.login-card {
+  width: 100%;
+  max-width: 44rem;
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--space-6) var(--space-6);
+}
+.login-logo {
+  width: 6.4rem;
+  height: 6.4rem;
+  border-radius: 50%;
+  background: var(--green-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0 auto var(--space-3);
+}
+.login-title { font-size: 2.6rem; font-weight: 600; color: var(--starbucks-green); text-align: center; margin-bottom: var(--space-1); }
+.login-subtitle { font-size: 1.4rem; color: var(--text-black-soft); text-align: center; margin-bottom: var(--space-5); }
+
+.tab-toggle {
+  display: flex;
+  background: var(--neutral-cool);
+  border-radius: var(--button-radius);
+  padding: 0.4rem;
+  margin-bottom: var(--space-4);
+}
+.tab-toggle-item {
+  flex: 1;
+  padding: 0.8rem;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 500;
+  border-radius: var(--button-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-black-soft);
+}
+.tab-toggle-item.active { background: var(--white); color: var(--starbucks-green); box-shadow: var(--card-shadow); }
+
+.quick-login {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.quick-btn {
+  flex: 1;
+  height: 5.2rem;
+  border-radius: var(--input-radius);
+  background: var(--neutral-cool);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.quick-btn:hover { background: var(--ceramic); }
+.quick-icon { font-size: 2rem; }
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: var(--space-4) 0;
+  color: var(--text-black-soft);
+  font-size: 1.3rem;
+}
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--ceramic); }
+.divider-text { padding: 0 var(--space-3); }
+
+.demo-tip {
+  background: var(--gold-lightest);
+  border: 1px dashed var(--gold);
+  border-radius: 8px;
+  padding: var(--space-3);
+  font-size: 1.3rem;
+  color: var(--text-black);
+  margin-top: var(--space-4);
+}
+.demo-tip strong { color: var(--starbucks-green); }
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+  <div class="login-card">
+    <div class="login-logo">H</div>
+    <h1 class="login-title">欢迎回来</h1>
+    <p class="login-subtitle">登录 Hotel Booking，开启你的下一段旅程</p>
+
+    <div class="tab-toggle">
+      <div class="tab-toggle-item active" onclick="switchMode(this, 'pwd')">密码登录</div>
+      <div class="tab-toggle-item" onclick="switchMode(this, 'sms')">短信登录</div>
+    </div>
+
+    <!-- 密码登录 -->
+    <form id="pwdForm" onsubmit="loginPwd(event)">
+      <div class="form-group">
+        <input type="text" class="form-input" id="phone" placeholder=" " value="13800138000" required>
+        <label class="form-label">手机号</label>
+      </div>
+      <div class="form-group">
+        <input type="password" class="form-input" id="password" placeholder=" " value="demo123" required>
+        <label class="form-label">密码</label>
+      </div>
+      <div class="row" style="justify-content: space-between; font-size: 1.3rem; margin-top: -1.2rem;">
+        <label style="display:flex; align-items:center; gap:0.6rem; color:var(--text-black-soft);">
+          <input type="checkbox" checked style="width:1.6rem;height:1.6rem;accent-color:var(--green-accent);">
+          7 天内自动登录
+        </label>
+        <a href="#" style="color:var(--green-accent);">忘记密码？</a>
+      </div>
+      <button type="submit" class="btn-primary btn-block btn-lg mt-3">登 录</button>
+    </form>
+
+    <!-- 短信登录 -->
+    <form id="smsForm" style="display:none" onsubmit="loginSms(event)">
+      <div class="form-group">
+        <input type="tel" class="form-input" id="smsPhone" placeholder=" " value="13800138000" required>
+        <label class="form-label">手机号</label>
+      </div>
+      <div class="row gap-3" style="align-items: stretch;">
+        <div class="form-group col">
+          <input type="text" class="form-input" id="smsCode" placeholder=" " required maxlength="6">
+          <label class="form-label">验证码</label>
+        </div>
+        <button type="button" class="btn-outline" style="height:5.6rem; flex-shrink: 0;" id="smsBtn" onclick="sendSms()">发送验证码</button>
+      </div>
+      <button type="submit" class="btn-primary btn-block btn-lg mt-3">登 录</button>
+    </form>
+
+    <div class="divider"><span class="divider-text">其他登录方式</span></div>
+
+    <div class="quick-login">
+      <div class="quick-btn" onclick="quickLogin('wechat')">
+        <span class="quick-icon">💚</span>
+        <span>微信</span>
+      </div>
+      <div class="quick-btn" onclick="quickLogin('qq')">
+        <span class="quick-icon">🐧</span>
+        <span>QQ</span>
+      </div>
+      <div class="quick-btn" onclick="quickLogin('apple')">
+        <span class="quick-icon">🍎</span>
+        <span>Apple</span>
+      </div>
+    </div>
+
+    <div class="demo-tip">
+      💡 <strong>演示账号</strong>：手机号 13800138000 / 密码 demo123<br>
+      任意输入也能登录（演示模式）
+    </div>
+
+    <div class="text-center mt-4 text-sm text-soft">
+      登录即表示同意 <a href="#" style="color:var(--green-accent);">《用户协议》</a> 和 <a href="#" style="color:var(--green-accent);">《隐私政策》</a>
+    </div>
+  </div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon();
+
+const redirect = URL.get('redirect') || 'index.html';
+
+function switchMode(el, mode) {
+  document.querySelectorAll('.tab-toggle-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pwdForm').style.display = mode === 'pwd' ? 'block' : 'none';
+  document.getElementById('smsForm').style.display = mode === 'sms' ? 'block' : 'none';
+}
+
+function loginPwd(e) {
+  e.preventDefault();
+  const phone = document.getElementById('phone').value.trim();
+  if (!/^1\d{10}$/.test(phone)) {
+    toast('请输入正确的手机号');
+    return;
+  }
+  doLogin(phone, '密码');
+}
+
+function loginSms(e) {
+  e.preventDefault();
+  const phone = document.getElementById('smsPhone').value.trim();
+  if (!/^1\d{10}$/.test(phone)) {
+    toast('请输入正确的手机号');
+    return;
+  }
+  doLogin(phone, '短信');
+}
+
+function quickLogin(provider) {
+  const map = { wechat: '微信用户', qq: 'QQ用户', apple: 'Apple用户' };
+  doLogin('13800138000', map[provider]);
+}
+
+function doLogin(phone, method) {
+  setUser({ name: phone === '13800138000' ? 'L 先生' : '用户' + phone.slice(-4), phone, loginAt: new Date().toISOString(), method });
+  toast(`${method}登录成功`);
+  setTimeout(() => location.href = redirect, 600);
+}
+
+let smsTimer = 0;
+function sendSms() {
+  if (smsTimer > 0) return;
+  const phone = document.getElementById('smsPhone').value.trim();
+  if (!/^1\d{10}$/.test(phone)) {
+    toast('请输入正确的手机号');
+    return;
+  }
+  toast(`验证码已发送至 ${phone}（演示：任意 6 位即可）`);
+  smsTimer = 60;
+  const btn = document.getElementById('smsBtn');
+  const tick = () => {
+    btn.textContent = `${smsTimer}s 后重发`;
+    btn.disabled = true;
+    if (--smsTimer <= 0) {
+      btn.textContent = '重新发送';
+      btn.disabled = false;
+      clearInterval(timer);
+    }
+  };
+  tick();
+  const timer = setInterval(tick, 1000);
+}
+</script>
+
+</body>
+</html>

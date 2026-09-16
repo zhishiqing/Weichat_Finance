@@ -13,6 +13,95 @@
 
 ---
 
+## v2.0.1 · 2026-09-16
+
+### Added · NotificationController 智能路由（PARTNER 模式回调验签）
+
+**目标**：v2.0-alpha 留待 v2.0.1 完成的核心任务——回调验签要能智能路由到正确的 Parser。
+
+#### 1. 三段式路由策略
+
+```
+┌─────────────────────────────────────────────────────┐
+│ 回调请求（加密 body + 签名 4 件套）                  │
+└──────────────────┬──────────────────────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│ 第 1 段：默认 Parser（O(1)）                        │
+│ - 单 Config 场景必中                                │
+│ - 命中概率 ≥ 95%（v1.6 数据）                       │
+└──────────────────┬──────────────────────────────────┘
+                   │ 失败 ↓
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│ 第 2 段：遍历所有缓存 Parser（O(N)）                │
+│ - 跳过已尝试的默认 parser                            │
+│ - PARTNER 模式命中此段                              │
+└──────────────────┬──────────────────────────────────┘
+                   │ 失败 ↓
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│ 第 3 段：返回 failure，由 Controller 落库 FAIL       │
+│ - 记录 matchedMchId 到 t_pay_notify_log.parent_mch_id│
+└─────────────────────────────────────────────────────┘
+```
+
+#### 2. NotificationParserManager.parseWithFallback()
+
+```java
+ParseResult result = parserManager.parseWithFallback(param, String.class);
+if (result.isSuccess()) {
+    String decrypted = result.getBodyAs(String.class);
+    String matchedMchId = result.getMatchedMchId(); // 用于审计
+}
+```
+
+#### 3. WechatNotifyController 重构
+
+- 删除对单 `NotificationParser` Bean 的依赖
+- 改为注入 `NotificationParserManager`
+- 验证成功后记录 `matchedMchId` 到 `t_pay_notify_log.parent_mch_id`（PARTNER 模式审计）
+- 提取 `sub_mch_id`（PARTNER 模式字段）
+
+#### 4. 单元测试（6 个 PASS）
+
+`NotificationParserManagerTest`：
+- ✅ 默认 Parser 命中失败时 fallback 到遍历
+- ✅ 所有 Parser 都失败时返回 failure
+- ✅ 缓存为空时直接返回 failure
+- ✅ ParseResult.success 工厂方法
+- ✅ ParseResult.failure 工厂方法
+- ✅ clearCache 不会抛异常
+
+```
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
+```
+
+#### 5. E2E 验证
+
+| 场景 | 结果 |
+|---|---|
+| 启动期 WechatPayConfigManager + NotificationParserManager | ✅ 双 Manager 协同加载 |
+| SIGNTEST 探测 | ✅ 返回 `{"code":"SUCCESS"}` |
+| DIRECT JSAPI 下单 | ✅ 真实 prepay_id（`wx347584504761909b450000042620263000`） |
+| 虚假签名回调 | ✅ 2ms 内完成路由+验签+落库，所有 Parser 失败记录 FAIL |
+
+证据：
+```
+[ParserManager] 创建 parser: mchId=1674723182
+[ParserManager] 第 1 段尝试默认 Parser 失败: Illegal base64 character 5f
+[ParserManager] ❌ 所有 Parser 都验签失败
+[回调路由] ❌ 所有 Parser 都验签失败 (2ms)
+```
+
+#### 6. 性能优化（未来）
+
+- v2.0.1：已知 mchId 回调路由（通过 `t_pay_notify_log` 缓存历史 mchId → 0(N) → O(1)）
+- v2.0.2：L1 缓存（最近 N 个回调的 mchId → Java ConcurrentHashMap 内存缓存）
+
+---
+
 ## v2.0-alpha · 2026-09-16
 
 ### Added · 服务商模式架构（PARTNER MODE）

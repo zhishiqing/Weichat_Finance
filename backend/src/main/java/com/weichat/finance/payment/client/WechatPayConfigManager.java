@@ -63,6 +63,13 @@ public class WechatPayConfigManager {
     private WechatPayProperties properties;
 
     /**
+     * 默认 mchId（来自 {@code wechatpay.merchant.mchId} 配置）。
+     *
+     * <p>v1.6 启动期注入，运行时只读。用于回调解密时定位默认 Parser。</p>
+     */
+    private String defaultMchId;
+
+    /**
      * Config 缓存：key = mchId（直连商户或服务商号）
      */
     private final ConcurrentMap<String, Config> configCache = new ConcurrentHashMap<>();
@@ -79,6 +86,7 @@ public class WechatPayConfigManager {
             log.warn("[ConfigManager] wechatpay.merchant.mchId 未配置，跳过默认 Config 初始化");
             return;
         }
+        defaultMchId = m.getMchId();
         try {
             Config cfg = createConfig(
                 m.getMchId(),
@@ -93,6 +101,20 @@ public class WechatPayConfigManager {
             log.error("[ConfigManager] 默认 Config 初始化失败: {}", e.getMessage(), e);
             // 不抛异常：保持启动成功，让后续运行时按需懒加载
         }
+    }
+
+    /**
+     * 获取默认 mchId（用于回调解密路由）。
+     */
+    public String getDefaultMchId() {
+        return defaultMchId;
+    }
+
+    /**
+     * 获取所有已缓存的 mchId（用于回调遍历重试）。
+     */
+    public java.util.Set<String> getAllCachedMchIds() {
+        return java.util.Collections.unmodifiableSet(configCache.keySet());
     }
 
     /**

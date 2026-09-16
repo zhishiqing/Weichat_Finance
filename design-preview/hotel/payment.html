@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>支付订单 · Hotel Booking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page { max-width: 80rem; margin: 0 auto; padding: var(--space-5) var(--space-3); }
+
+.countdown-bar {
+  background: var(--house-green);
+  color: var(--text-white);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--card-radius);
+  margin-bottom: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.4rem;
+}
+.countdown-time { font-size: 2rem; font-weight: 700; font-family: monospace; }
+.countdown-time.urgent { color: var(--yellow); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: 0.6; } }
+
+.layout { display: grid; grid-template-columns: 1fr 32rem; gap: var(--space-4); }
+
+.amount-card {
+  background: linear-gradient(135deg, var(--house-green) 0%, var(--green-uplift) 100%);
+  color: var(--text-white);
+  border-radius: var(--card-radius);
+  padding: var(--space-6);
+  text-align: center;
+  margin-bottom: var(--space-3);
+  box-shadow: var(--card-shadow);
+}
+.amount-label { font-size: 1.4rem; color: var(--text-white-soft); margin-bottom: var(--space-2); }
+.amount-value { font-size: 6rem; font-weight: 700; line-height: 1; margin-bottom: var(--space-2); }
+.amount-currency { font-size: 3rem; font-weight: 500; vertical-align: top; margin-right: 0.4rem; }
+.amount-rooms { font-size: 1.3rem; color: var(--text-white-soft); }
+
+.pay-methods-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); margin-bottom: var(--space-3); }
+.pay-method { display: flex; align-items: center; padding: var(--space-3); border: 2px solid var(--ceramic); border-radius: 8px; margin-bottom: var(--space-2); cursor: pointer; transition: all 0.2s ease; }
+.pay-method:hover { border-color: var(--green-accent); }
+.pay-method.active { border-color: var(--green-accent); background: linear-gradient(135deg, var(--white) 0%, var(--green-light) 100%); }
+.pay-method-icon { width: 4rem; height: 4rem; border-radius: 8px; background: var(--green-light); color: var(--starbucks-green); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-right: var(--space-3); flex-shrink: 0; }
+.pay-method-info { flex: 1; }
+.pay-method-name { font-size: 1.6rem; font-weight: 600; color: var(--text-black); }
+.pay-method-desc { font-size: 1.3rem; color: var(--text-black-soft); margin-top: 2px; }
+.pay-method-tag { padding: 2px 8px; background: var(--red); color: var(--white); border-radius: 4px; font-size: 1.1rem; font-weight: 600; margin-left: var(--space-2); }
+.pay-radio { width: 2rem; height: 2rem; border: 2px solid #d6dbde; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-left: var(--space-3); }
+.pay-method.active .pay-radio { border-color: var(--green-accent); }
+.pay-method.active .pay-radio::after { content: ''; width: 1rem; height: 1rem; border-radius: 50%; background: var(--green-accent); }
+
+.summary-card { position: sticky; top: 9.2rem; height: fit-content; }
+.hotel-thumb { display: flex; gap: var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--ceramic); margin-bottom: var(--space-3); }
+.hotel-thumb img { width: 8rem; height: 8rem; border-radius: 8px; object-fit: cover; }
+.hotel-thumb-info { flex: 1; }
+.hotel-thumb-name { font-size: 1.5rem; font-weight: 600; color: var(--text-black); margin-bottom: 0.4rem; }
+
+.summary-row { display: flex; justify-content: space-between; padding: 0.6rem 0; font-size: 1.4rem; }
+.summary-row.total { border-top: 1px solid var(--ceramic); margin-top: var(--space-2); padding-top: var(--space-3); font-size: 1.6rem; font-weight: 700; }
+.summary-row.total .price { color: var(--starbucks-green); font-size: 2.2rem; }
+
+.security-badges { display: flex; justify-content: center; gap: var(--space-3); margin-top: var(--space-3); font-size: 1.2rem; color: var(--text-black-soft); }
+.security-badge { display: flex; align-items: center; gap: 0.4rem; }
+
+@media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } .summary-card { position: static; } .amount-value { font-size: 4.8rem; } }
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+
+  <div class="countdown-bar">
+    <span>⏰ 订单将在 <span class="countdown-time" id="countdown">14:59</span> 后取消，请尽快支付</span>
+    <span>订单号：<span id="oid"></span></span>
+  </div>
+
+  <div class="layout">
+    <div>
+      <!-- 金额 hero -->
+      <div class="amount-card">
+        <div class="amount-label">应付总额</div>
+        <div class="amount-value">
+          <span class="amount-currency">¥</span><span id="payAmount">--</span>
+        </div>
+        <div class="amount-rooms" id="payRoom"></div>
+      </div>
+
+      <!-- 支付方式 -->
+      <div class="pay-methods-card">
+        <div style="font-size:1.6rem;font-weight:600;color:var(--text-black);margin-bottom:var(--space-3);">选择支付方式</div>
+
+        <div class="pay-method active" onclick="selectPay(this, 'wechat')">
+          <div class="pay-method-icon">💚</div>
+          <div class="pay-method-info">
+            <div class="pay-method-name">微信支付 <span class="pay-method-tag">推荐</span></div>
+            <div class="pay-method-desc">使用微信安全支付，免输入密码</div>
+          </div>
+          <div class="pay-radio"></div>
+        </div>
+
+        <div class="pay-method" onclick="selectPay(this, 'alipay')">
+          <div class="pay-method-icon">💙</div>
+          <div class="pay-method-info">
+            <div class="pay-method-name">支付宝支付</div>
+            <div class="pay-method-desc">余额宝/花呗/银行卡均可</div>
+          </div>
+          <div class="pay-radio"></div>
+        </div>
+
+        <div class="pay-method" onclick="selectPay(this, 'card')">
+          <div class="pay-method-icon">💳</div>
+          <div class="pay-method-info">
+            <div class="pay-method-name">银行卡支付</div>
+            <div class="pay-method-desc">支持储蓄卡/信用卡 · 银联/ Visa / Mastercard</div>
+          </div>
+          <div class="pay-radio"></div>
+        </div>
+
+        <div class="pay-method" onclick="selectPay(this, 'balance')">
+          <div class="pay-method-icon">💰</div>
+          <div class="pay-method-info">
+            <div class="pay-method-name">酒店钱包 <span class="pay-method-tag" style="background:var(--green-accent);">余额 ¥2,580</span></div>
+            <div class="pay-method-desc">使用账户余额抵扣</div>
+          </div>
+          <div class="pay-radio"></div>
+        </div>
+      </div>
+
+      <button class="btn-primary btn-lg btn-block" onclick="payNow()">
+        <span style="font-size:1.8rem">🔒</span> 确认支付 ¥<span id="payBtnAmount">--</span>
+      </button>
+
+      <div class="security-badges">
+        <div class="security-badge">🔒 SSL 安全加密</div>
+        <div class="security-badge">🛡️ 银联认证</div>
+        <div class="security-badge">💯 7×24 客服</div>
+      </div>
+    </div>
+
+    <!-- 订单摘要 -->
+    <aside>
+      <div class="card summary-card">
+        <div style="padding:var(--space-4);">
+          <div class="hotel-thumb">
+            <img id="hThumb" src="" alt="">
+            <div class="hotel-thumb-info">
+              <div class="hotel-thumb-name" id="hName"></div>
+              <div class="text-sm text-soft" id="hMeta"></div>
+            </div>
+          </div>
+
+          <div class="summary-row"><span>订单号</span><span id="sumOid" class="text-sm"></span></div>
+          <div class="summary-row"><span>房型</span><span id="sumRoom"></span></div>
+          <div class="summary-row"><span>入住</span><span>9月16日</span></div>
+          <div class="summary-row"><span>离店</span><span>9月17日</span></div>
+          <div class="summary-row"><span>共计</span><span>1 晚 · 2 成人</span></div>
+          <div class="summary-row"><span>入住人</span><span id="sumGuest"></span></div>
+
+          <div class="summary-row total"><span>应付总额</span><span class="price" id="sumTotal"></span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon();
+
+const oid = URL.get('oid');
+const order = OrderStore.get(oid);
+if (!order) { document.body.innerHTML = '<p style="padding:4rem">订单不存在或已过期</p>'; }
+
+document.getElementById('oid').textContent = order.id;
+document.getElementById('payAmount').textContent = order.price;
+document.getElementById('payBtnAmount').textContent = order.price;
+document.getElementById('payRoom').textContent = `${order.roomType} · 1 晚`;
+document.getElementById('hThumb').src = order.hotelCover;
+document.getElementById('hName').textContent = order.hotelName;
+document.getElementById('hMeta').textContent = `${order.hotelCity} · ${order.hotelDistrict}`;
+document.getElementById('sumOid').textContent = order.id;
+document.getElementById('sumRoom').textContent = order.roomType;
+document.getElementById('sumGuest').textContent = order.guestName;
+document.getElementById('sumTotal').textContent = `¥${order.price}`;
+
+// 倒计时
+let remain = 15 * 60;
+const cd = document.getElementById('countdown');
+function tick() {
+  const m = String(Math.floor(remain / 60)).padStart(2, '0');
+  const s = String(remain % 60).padStart(2, '0');
+  cd.textContent = `${m}:${s}`;
+  if (remain < 60) cd.classList.add('urgent');
+  if (remain <= 0) {
+    clearInterval(tid);
+    OrderStore.update(order.id, { status: 'EXPIRED' });
+    toast('订单已超时取消');
+    setTimeout(() => location.href = 'orders.html', 1500);
+    return;
+  }
+  remain--;
+}
+const tid = setInterval(tick, 1000);
+tick();
+
+function selectPay(el, key) {
+  document.querySelectorAll('.pay-method').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function payNow() {
+  const btn = event.target.closest('button');
+  btn.disabled = true;
+  btn.textContent = '支付中...';
+
+  // 模拟支付 2 秒后成功
+  setTimeout(() => {
+    OrderStore.update(order.id, {
+      status: 'PAID',
+      payTime: new Date().toISOString(),
+      payMethod: document.querySelector('.pay-method.active .pay-method-name').textContent.split(' ')[0],
+    });
+    clearInterval(tid);
+    location.href = `success.html?oid=${order.id}`;
+  }, 2000);
+}
+</script>
+
+</body>
+</html>

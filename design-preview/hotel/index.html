@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel Booking · 星巴克风格酒店预订</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+/* 首页专用样式 */
+.hero {
+  background: linear-gradient(135deg, var(--house-green) 0%, var(--green-uplift) 100%);
+  color: var(--text-white);
+  padding: var(--space-7) var(--space-3) calc(var(--space-7) + 4rem);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -10%;
+  width: 60rem; height: 60rem;
+  background: radial-gradient(circle, rgba(0,117,74,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-title {
+  font-size: 4.8rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: var(--space-3);
+  line-height: 1.2;
+  position: relative;
+}
+.hero-subtitle {
+  font-size: 1.8rem;
+  color: var(--text-white-soft);
+  margin-bottom: var(--space-5);
+  position: relative;
+}
+
+/* 搜索框 */
+.search-box {
+  max-width: 96rem;
+  margin: 0 auto;
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: var(--hover-shadow);
+  display: grid;
+  grid-template-columns: 1.4fr 1.4fr 1fr 0.8fr auto;
+  align-items: stretch;
+  position: relative;
+  overflow: hidden;
+}
+.search-item {
+  padding: var(--space-3) var(--space-4);
+  border-right: 1px solid var(--ceramic);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.search-item:hover { background: var(--neutral-cool); }
+.search-item:last-of-type { border-right: none; }
+.search-label {
+  font-size: 1.2rem;
+  color: var(--text-black-soft);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.search-value {
+  font-size: 1.5rem;
+  color: var(--text-black);
+  font-weight: 500;
+}
+.search-btn {
+  margin: var(--space-2);
+  padding: 0 var(--space-4);
+  font-size: 1.6rem;
+}
+
+/* 目的地卡片 */
+.section { padding: var(--space-6) var(--space-3); max-width: 120rem; margin: 0 auto; }
+.section-title { font-size: 2.4rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-2); }
+.section-subtitle { font-size: 1.4rem; color: var(--text-black-soft); margin-bottom: var(--space-4); }
+
+.city-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-3);
+}
+.city-card {
+  position: relative;
+  height: 18rem;
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: var(--card-shadow);
+  transition: all 0.3s ease;
+}
+.city-card:hover { transform: translateY(-4px); box-shadow: var(--hover-shadow); }
+.city-card:active { transform: scale(0.97); }
+.city-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+.city-card:hover img { transform: scale(1.08); }
+.city-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.7));
+}
+.city-card-info {
+  position: absolute;
+  bottom: var(--space-3);
+  left: var(--space-3);
+  color: var(--text-white);
+  z-index: 1;
+}
+.city-card-name { font-size: 1.8rem; font-weight: 600; }
+.city-card-en { font-size: 1.2rem; opacity: 0.85; }
+.city-card-count { font-size: 1.2rem; opacity: 0.75; margin-top: 2px; }
+
+/* 推荐酒店 */
+.hotel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+.hotel-card {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+.hotel-card:hover { transform: translateY(-4px); box-shadow: var(--hover-shadow); }
+.hotel-card:active { transform: scale(0.98); }
+.hotel-cover { width: 100%; height: 22rem; object-fit: cover; }
+.hotel-body { padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; flex: 1; }
+.hotel-header { display: flex; justify-content: space-between; align-items: start; gap: var(--space-3); margin-bottom: var(--space-2); }
+.hotel-name { font-size: 1.8rem; font-weight: 600; color: var(--text-black); line-height: 1.4; }
+.hotel-stars { color: var(--gold); font-size: 1.3rem; flex-shrink: 0; }
+.hotel-district { font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-2); }
+.hotel-tags { display: flex; gap: var(--space-1); flex-wrap: wrap; margin-bottom: var(--space-3); }
+.hotel-tag {
+  font-size: 1.1rem;
+  padding: 2px 8px;
+  background: var(--green-light);
+  color: var(--starbucks-green);
+  border-radius: 4px;
+  font-weight: 500;
+}
+.hotel-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  border-top: 1px solid var(--ceramic);
+  padding-top: var(--space-2);
+  margin-top: auto;
+}
+.hotel-score { display: flex; flex-direction: column; }
+.hotel-score-num { font-size: 1.8rem; font-weight: 700; color: var(--green-accent); }
+.hotel-score-label { font-size: 1.1rem; color: var(--text-black-soft); }
+.hotel-price { text-align: right; }
+.hotel-price-from { font-size: 1.1rem; color: var(--text-black-soft); }
+.hotel-price-num { font-size: 2.2rem; font-weight: 700; color: var(--starbucks-green); }
+
+/* feature band */
+.feature-band {
+  background: var(--house-green);
+  color: var(--text-white);
+  padding: var(--space-6) var(--space-3);
+  text-align: center;
+  margin-top: var(--space-6);
+}
+.feature-band h2 { font-size: 2.8rem; font-weight: 600; margin-bottom: var(--space-2); }
+.feature-band p { font-size: 1.6rem; color: var(--text-white-soft); max-width: 56rem; margin: 0 auto var(--space-4); }
+.feature-band .btn-primary { background: var(--white); color: var(--green-accent); border-color: var(--white); }
+.feature-band .btn-primary:hover { background: var(--green-light); border-color: var(--green-light); }
+
+/* 移动端 */
+@media (max-width: 1024px) {
+  .hotel-grid { grid-template-columns: repeat(2, 1fr); }
+  .city-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .hero-title { font-size: 3rem; }
+  .search-box { grid-template-columns: 1fr; }
+  .search-item { border-right: none; border-bottom: 1px solid var(--ceramic); }
+  .hotel-grid { grid-template-columns: 1fr; }
+  .city-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<!-- Hero + 搜索 -->
+<section class="hero">
+  <h1 class="hero-title">找到你的下一段旅程</h1>
+  <p class="hero-subtitle">从城市精品到度假村，海量房源任你选择</p>
+
+  <form class="search-box" onsubmit="goSearch(event)">
+    <div class="search-item" onclick="openCityPicker()">
+      <div class="search-label">目的地</div>
+      <div class="search-value" id="searchCity">上海</div>
+    </div>
+    <div class="search-item" onclick="alert('日期选择器 - 简化为今天+1 / 今天+2')">
+      <div class="search-label">入住 / 离店</div>
+      <div class="search-value" id="searchDate">9月16日 - 9月17日 · 1晚</div>
+    </div>
+    <div class="search-item" onclick="alert('简化为2成人')">
+      <div class="search-label">房客</div>
+      <div class="search-value">2成人 · 0儿童</div>
+    </div>
+    <div class="search-item" onclick="alert('简化为5星')">
+      <div class="search-label">星级</div>
+      <div class="search-value">不限</div>
+    </div>
+    <button type="submit" class="btn-primary search-btn">🔍 搜索</button>
+  </form>
+</section>
+
+<!-- 热门目的地 -->
+<section class="section">
+  <h2 class="section-title">热门目的地</h2>
+  <p class="section-subtitle">探索中国最受欢迎的旅行城市</p>
+
+  <div class="city-grid" id="cityGrid"></div>
+</section>
+
+<!-- 推荐酒店 -->
+<section class="section">
+  <h2 class="section-title">为你推荐</h2>
+  <p class="section-subtitle">基于你的浏览偏好精选</p>
+
+  <div class="hotel-grid" id="hotelGrid"></div>
+
+  <div class="text-center mt-5">
+    <a href="list.html" class="btn-outline">查看全部酒店 →</a>
+  </div>
+</section>
+
+<!-- Feature band -->
+<section class="feature-band">
+  <h2>注册即享会员特权</h2>
+  <p>累计入住 10 晚，解锁金卡会员，享受免费升级、延迟退房、专属客服等权益</p>
+  <a href="login.html" class="btn-primary">立即注册</a>
+</section>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon('home');
+
+document.getElementById('cityGrid').innerHTML = CITIES.map(c => `
+  <a href="list.html?city=${encodeURIComponent(c.name)}" class="city-card">
+    <img src="${c.cover}" alt="${c.name}" onerror="this.style.background='linear-gradient(135deg,var(--green-accent),var(--starbucks-green))'">
+    <div class="city-card-info">
+      <div class="city-card-name">${c.name}</div>
+      <div class="city-card-en">${c.en}</div>
+      <div class="city-card-count">${c.count} 家酒店</div>
+    </div>
+  </a>
+`).join('');
+
+document.getElementById('hotelGrid').innerHTML = HOTELS.slice(0, 6).map(h => `
+  <a href="detail.html?id=${h.id}" class="hotel-card">
+    <img class="hotel-cover" src="${h.cover}" alt="${h.nameCn}" onerror="this.style.background='linear-gradient(135deg,var(--ceramic),var(--neutral-warm))'">
+    <div class="hotel-body">
+      <div class="hotel-header">
+        <div class="hotel-name">${h.nameCn}</div>
+        <div class="hotel-stars">${'★'.repeat(h.star)}</div>
+      </div>
+      <div class="hotel-district">📍 ${h.district}</div>
+      <div class="hotel-tags">
+        ${h.tags.slice(0, 3).map(t => `<span class="hotel-tag">${t}</span>`).join('')}
+      </div>
+      <div class="hotel-footer">
+        <div class="hotel-score">
+          <div class="hotel-score-num">${h.score}<span style="font-size:1.2rem">/10</span></div>
+          <div class="hotel-score-label">${h.reviewCount} 条评价</div>
+        </div>
+        <div class="hotel-price">
+          <div class="hotel-price-from">¥ ${h.oldPrice} 起</div>
+          <div class="hotel-price-num">¥${h.price}<span style="font-size:1.3rem"> 起</span></div>
+        </div>
+      </div>
+    </div>
+  </a>
+`).join('');
+
+function goSearch(e) {
+  e.preventDefault();
+  const city = document.getElementById('searchCity').textContent;
+  location.href = `list.html?city=${encodeURIComponent(city)}`;
+}
+function openCityPicker() {
+  const cities = CITIES.map(c => c.name).join(' / ');
+  const choice = prompt('选择目的地（演示用 input）:\n\n' + cities, '上海');
+  if (choice) {
+    document.getElementById('searchCity').textContent = choice;
+  }
+}
+</script>
+
+</body>
+</html>

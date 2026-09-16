@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>酒店详情 · Hotel Booking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.detail-wrap { max-width: 120rem; margin: 0 auto; padding: var(--space-4) var(--space-3); }
+
+.breadcrumb { font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-3); }
+.breadcrumb a { color: var(--green-accent); }
+.breadcrumb a:hover { text-decoration: underline; }
+
+.gallery {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0.4rem;
+  height: 42rem;
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+.gallery-main { grid-row: 1 / 3; }
+.gallery img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: transform 0.3s ease; }
+.gallery img:hover { transform: scale(1.04); }
+
+.header-card {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.hotel-title { font-size: 3rem; font-weight: 700; color: var(--text-black); margin-bottom: var(--space-2); }
+.hotel-en { font-size: 1.5rem; color: var(--text-black-soft); margin-bottom: var(--space-3); }
+.hotel-meta { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; font-size: 1.4rem; color: var(--text-black-soft); margin-bottom: var(--space-3); }
+.hotel-meta .stars { color: var(--gold); font-size: 1.6rem; }
+.hotel-meta .score-pill { background: var(--green-accent); color: var(--white); padding: 0.4rem 1rem; border-radius: 8px; font-weight: 600; font-size: 1.3rem; }
+.hotel-tags { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.tag-pill { font-size: 1.2rem; padding: 0.4rem 1rem; background: var(--green-light); color: var(--starbucks-green); border-radius: var(--chip-radius); font-weight: 500; }
+
+.section-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); margin-bottom: var(--space-4); }
+.section-title { font-size: 2rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--ceramic); }
+
+.rooms-table { display: flex; flex-direction: column; gap: var(--space-3); }
+.room-card {
+  border: 2px solid var(--ceramic);
+  border-radius: var(--card-radius);
+  padding: var(--space-3);
+  display: grid;
+  grid-template-columns: 1fr 24rem;
+  gap: var(--space-4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.room-card:hover { border-color: var(--green-accent); box-shadow: var(--card-shadow); }
+.room-card.selected { border-color: var(--green-accent); background: linear-gradient(135deg, var(--white) 0%, var(--green-light) 100%); }
+.room-type { font-size: 1.8rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-2); }
+.room-features { display: flex; gap: var(--space-3); flex-wrap: wrap; font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-2); }
+.room-feature { display: flex; align-items: center; gap: 4px; }
+.room-desc { font-size: 1.3rem; color: var(--text-black-soft); }
+.room-cancel { display: inline-block; padding: 2px 8px; background: var(--green-light); color: var(--starbucks-green); border-radius: 4px; font-size: 1.1rem; font-weight: 500; margin-right: var(--space-1); }
+.room-cancel.no { background: var(--red-tint); color: var(--red); }
+
+.room-action { text-align: right; display: flex; flex-direction: column; justify-content: space-between; }
+.room-price-now { font-size: 2.6rem; font-weight: 700; color: var(--starbucks-green); line-height: 1; }
+.room-price-old { font-size: 1.3rem; color: var(--text-black-soft); text-decoration: line-through; margin-top: 0.4rem; }
+.room-action .btn-primary { margin-top: var(--space-2); }
+
+.facilities { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); }
+.facility { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); font-size: 1.3rem; color: var(--text-black); }
+.facility-icon { width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--green-light); color: var(--starbucks-green); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+
+.review-summary { display: grid; grid-template-columns: 24rem 1fr; gap: var(--space-4); margin-bottom: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ceramic); }
+.review-score-big { text-align: center; }
+.review-score-big .num { font-size: 5rem; font-weight: 700; color: var(--green-accent); line-height: 1; }
+.review-score-big .label { font-size: 1.4rem; color: var(--text-black-soft); margin-top: var(--space-1); }
+.review-breakdown { display: flex; flex-direction: column; gap: var(--space-2); }
+.breakdown-row { display: grid; grid-template-columns: 8rem 1fr 4rem; gap: var(--space-3); align-items: center; font-size: 1.3rem; }
+.bar-bg { height: 0.6rem; background: var(--ceramic); border-radius: 0.4rem; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--green-accent); border-radius: 0.4rem; }
+
+.review-item { padding: var(--space-3) 0; border-bottom: 1px solid var(--ceramic); }
+.review-item:last-child { border-bottom: none; }
+.review-header { display: flex; justify-content: space-between; margin-bottom: var(--space-2); }
+.review-user { font-weight: 600; color: var(--text-black); font-size: 1.5rem; }
+.review-stars { color: var(--gold); }
+.review-date { font-size: 1.2rem; color: var(--text-black-soft); }
+.review-text { font-size: 1.4rem; color: var(--text-black); line-height: 1.6; }
+
+.sticky-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--white);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+  padding: var(--space-3);
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 50;
+}
+.sticky-bar.visible { display: flex; }
+.sticky-info { font-size: 1.4rem; }
+.sticky-price { font-size: 2.4rem; font-weight: 700; color: var(--starbucks-green); }
+
+@media (max-width: 1024px) {
+  .gallery { grid-template-columns: 1fr 1fr; grid-template-rows: 24rem 14rem; height: auto; }
+  .gallery-main { grid-column: 1 / 3; grid-row: 1; }
+  .room-card { grid-template-columns: 1fr; }
+  .room-action { text-align: left; }
+  .facilities { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .hotel-title { font-size: 2.2rem; }
+  .review-summary { grid-template-columns: 1fr; }
+  .facilities { grid-template-columns: repeat(2, 1fr); }
+  .gallery { grid-template-columns: 1fr; grid-template-rows: 18rem; }
+  .gallery-main { grid-column: 1; }
+  .gallery img:not(.gallery-main) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="detail-wrap">
+  <div class="breadcrumb">
+    <a href="index.html">首页</a> / <a href="list.html">酒店</a> / <span id="bcCity">上海</span> / <span id="bcName"></span>
+  </div>
+
+  <!-- 图片集 -->
+  <div class="gallery" id="gallery"></div>
+
+  <!-- 标题卡 -->
+  <div class="header-card">
+    <h1 class="hotel-title" id="hName"></h1>
+    <div class="hotel-en" id="hEn"></div>
+    <div class="hotel-meta">
+      <span class="stars" id="hStars"></span>
+      <span class="score-pill" id="hScore"></span>
+      <span>📍 <span id="hAddr"></span></span>
+    </div>
+    <div class="hotel-tags" id="hTags"></div>
+  </div>
+
+  <!-- 房型 -->
+  <div class="section-card">
+    <h2 class="section-title">选择房型</h2>
+    <div class="rooms-table" id="roomsTable"></div>
+  </div>
+
+  <!-- 设施 -->
+  <div class="section-card">
+    <h2 class="section-title">酒店设施</h2>
+    <div class="facilities" id="facilities"></div>
+  </div>
+
+  <!-- 评价 -->
+  <div class="section-card">
+    <h2 class="section-title">住客评价 (<span id="reviewTotal"></span>)</h2>
+    <div class="review-summary">
+      <div class="review-score-big">
+        <div class="num" id="scoreBig"></div>
+        <div class="label">/10 · 棒极了</div>
+      </div>
+      <div class="review-breakdown">
+        <div class="breakdown-row"><span>卫生</span><div class="bar-bg"><div class="bar-fill" style="width:92%"></div></div><span>9.2</span></div>
+        <div class="breakdown-row"><span>设施</span><div class="bar-bg"><div class="bar-fill" style="width:90%"></div></div><span>9.0</span></div>
+        <div class="breakdown-row"><span>服务</span><div class="bar-bg"><div class="bar-fill" style="width:94%"></div></div><span>9.4</span></div>
+        <div class="breakdown-row"><span>位置</span><div class="bar-bg"><div class="bar-fill" style="width:96%"></div></div><span>9.6</span></div>
+      </div>
+    </div>
+    <div id="reviews"></div>
+  </div>
+
+  <!-- 周边 -->
+  <div class="section-card">
+    <h2 class="section-title">周边设施</h2>
+    <div style="font-size:1.4rem;color:var(--text-black);">
+      🚇 <strong>地铁站</strong> · 10 号线南京东路站 步行 5 分钟<br><br>
+      🛍️ <strong>购物</strong> · 恒基名人购物中心 步行 8 分钟<br><br>
+      🍴 <strong>美食</strong> · 外滩沿线米其林餐厅 步行 10 分钟<br><br>
+      ✈️ <strong>机场</strong> · 浦东国际机场 45 分钟车程
+    </div>
+  </div>
+
+  <!-- 底部浮动价格条 -->
+  <div class="sticky-bar" id="stickyBar">
+    <div class="sticky-info">
+      <div class="sticky-price">¥<span id="stickyPrice">--</span><span style="font-size:1.3rem;font-weight:400;color:var(--text-black-soft)"> /晚起</span></div>
+      <div style="color:var(--text-black-soft);font-size:1.2rem;" id="stickyRoom">请选择房型</div>
+    </div>
+    <button class="btn-primary btn-lg" onclick="bookNow()">立即预订</button>
+  </div>
+
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon();
+
+const id = URL.get('id') || 'h001';
+const hotel = getHotel(id);
+if (!hotel) { document.body.innerHTML = '<p style="padding:4rem">酒店不存在</p>'; }
+
+let selectedRoomId = null;
+
+// 面包屑
+document.getElementById('bcCity').textContent = hotel.city;
+document.getElementById('bcName').textContent = hotel.nameCn;
+
+// 图集
+document.getElementById('gallery').innerHTML = hotel.images.slice(0, 5).map((img, i) =>
+  `<img class="${i === 0 ? 'gallery-main' : ''}" src="${img}" alt="${hotel.nameCn}" onerror="this.style.background='linear-gradient(135deg,var(--ceramic),var(--neutral-warm))'">`
+).join('');
+
+// 头部
+document.getElementById('hName').textContent = hotel.nameCn;
+document.getElementById('hEn').textContent = `${hotel.nameEn} · ${hotel.address}`;
+document.getElementById('hStars').textContent = '★'.repeat(hotel.star);
+document.getElementById('hScore').textContent = `${hotel.score} 棒极了`;
+document.getElementById('hAddr').textContent = `${hotel.city} · ${hotel.district}`;
+document.getElementById('hTags').innerHTML = hotel.tags.map(t => `<span class="tag-pill">${t}</span>`).join('');
+
+// 房型
+document.getElementById('roomsTable').innerHTML = hotel.rooms.map((r, i) => `
+  <div class="room-card ${selectedRoomId === r.id ? 'selected' : ''}" onclick="selectRoom('${r.id}', ${r.price}, '${r.type}')">
+    <div>
+      <div class="room-type">${r.type}</div>
+      <div class="room-features">
+        <span class="room-feature">🛏️ ${r.bed}</span>
+        <span class="room-feature">📐 ${r.area}</span>
+        <span class="room-feature">🪟 ${r.window}</span>
+        ${r.breakfast ? '<span class="room-feature">🍳 含早餐</span>' : ''}
+      </div>
+      <div class="room-desc">
+        <span class="room-cancel ${r.cancel === '不可退' ? 'no' : ''}">${r.cancel}</span>
+        WiFi · 24h 热水 · 空调
+      </div>
+    </div>
+    <div class="room-action">
+      <div>
+        <div class="room-price-now">¥${r.price}</div>
+        <div class="room-price-old">¥${Math.round(r.price * 1.2)}</div>
+      </div>
+      <button class="btn-primary" onclick="event.stopPropagation();bookRoom('${r.id}')">预订</button>
+    </div>
+  </div>
+`).join('');
+
+// 设施
+document.getElementById('facilities').innerHTML = hotel.facilities.map(f =>
+  `<div class="facility"><div class="facility-icon">✓</div>${f}</div>`
+).join('');
+
+// 评价
+document.getElementById('reviewTotal').textContent = hotel.reviewCount;
+document.getElementById('scoreBig').textContent = hotel.score;
+document.getElementById('reviews').innerHTML = hotel.reviews.map(r => `
+  <div class="review-item">
+    <div class="review-header">
+      <div class="review-user">${r.user} <span class="review-stars">${'★'.repeat(r.score)}</span></div>
+      <div class="review-date">${r.date}</div>
+    </div>
+    <div class="review-text">${r.text}</div>
+  </div>
+`).join('');
+
+function selectRoom(rid, price, type) {
+  selectedRoomId = rid;
+  document.querySelectorAll('.room-card').forEach((c, i) => {
+    c.classList.toggle('selected', hotel.rooms[i].id === rid);
+  });
+  document.getElementById('stickyBar').classList.add('visible');
+  document.getElementById('stickyPrice').textContent = price;
+  document.getElementById('stickyRoom').textContent = type;
+}
+
+function bookRoom(rid) {
+  selectRoom(rid, getRoom(id, rid).price, getRoom(id, rid).type);
+  bookNow();
+}
+
+function bookNow() {
+  if (!selectedRoomId) {
+    toast('请先选择一个房型');
+    return;
+  }
+  const room = getRoom(id, selectedRoomId);
+  setCart({
+    hotelId: id,
+    roomId: selectedRoomId,
+    price: room.price,
+    checkIn: '2026-09-16',
+    checkOut: '2026-09-17',
+    guests: 2,
+  });
+  location.href = 'booking.html';
+}
+</script>
+
+</body>
+</html>

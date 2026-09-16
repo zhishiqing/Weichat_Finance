@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>订单详情 · Hotel Booking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page { max-width: 80rem; margin: 0 auto; padding: var(--space-5) var(--space-3); }
+.breadcrumb { font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-3); }
+.breadcrumb a { color: var(--green-accent); }
+
+.status-banner {
+  background: linear-gradient(135deg, var(--house-green) 0%, var(--green-uplift) 100%);
+  color: var(--text-white);
+  border-radius: var(--card-radius);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--card-shadow);
+}
+.status-info .status-main { font-size: 2.4rem; font-weight: 600; margin-bottom: var(--space-1); }
+.status-info .status-sub { font-size: 1.4rem; color: var(--text-white-soft); }
+.status-actions { display: flex; gap: var(--space-2); }
+
+.timeline-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); margin-bottom: var(--space-3); }
+.section-title { font-size: 1.6rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--ceramic); }
+
+.timeline { position: relative; padding-left: var(--space-4); }
+.timeline::before { content: ''; position: absolute; left: 0.6rem; top: 0.6rem; bottom: 0.6rem; width: 2px; background: var(--ceramic); }
+.timeline-item { position: relative; padding-bottom: var(--space-4); }
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-dot { position: absolute; left: -2.4rem; top: 0.4rem; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: var(--ceramic); border: 3px solid var(--white); }
+.timeline-item.done .timeline-dot { background: var(--green-accent); }
+.timeline-item.current .timeline-dot { background: var(--green-accent); box-shadow: 0 0 0 4px var(--green-light); }
+.timeline-time { font-size: 1.2rem; color: var(--text-black-soft); margin-bottom: 0.4rem; }
+.timeline-label { font-size: 1.4rem; color: var(--text-black); font-weight: 500; }
+
+.detail-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); margin-bottom: var(--space-3); }
+.hotel-summary { display: flex; gap: var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--ceramic); margin-bottom: var(--space-3); }
+.hotel-summary img { width: 11rem; height: 11rem; border-radius: 8px; object-fit: cover; }
+.hotel-summary-info { flex: 1; }
+.hotel-summary-name { font-size: 1.8rem; font-weight: 600; margin-bottom: var(--space-1); color: var(--text-black); }
+.hotel-summary-meta { font-size: 1.3rem; color: var(--text-black-soft); margin-bottom: var(--space-1); }
+.hotel-summary-room { padding: 0.3rem 1rem; background: var(--green-light); color: var(--starbucks-green); border-radius: var(--chip-radius); font-size: 1.2rem; font-weight: 500; display: inline-block; margin-top: var(--space-1); }
+
+.detail-row { display: flex; justify-content: space-between; padding: var(--space-2) 0; font-size: 1.4rem; }
+.detail-label { color: var(--text-black-soft); }
+.detail-value { color: var(--text-black); font-weight: 500; }
+.detail-value.mono { font-family: monospace; }
+
+.price-row { display: flex; justify-content: space-between; padding: var(--space-2) 0; font-size: 1.4rem; }
+.price-row.total { border-top: 1px solid var(--ceramic); margin-top: var(--space-2); padding-top: var(--space-3); font-size: 1.6rem; font-weight: 700; }
+.price-row.total .price { color: var(--starbucks-green); font-size: 2.2rem; }
+
+.actions-bar { display: flex; gap: var(--space-3); justify-content: flex-end; padding: var(--space-3) 0; }
+
+@media (max-width: 768px) {
+  .status-banner { flex-direction: column; align-items: stretch; gap: var(--space-3); }
+  .hotel-summary { flex-direction: column; }
+  .hotel-summary img { width: 100%; height: 18rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+  <div class="breadcrumb">
+    <a href="index.html">首页</a> / <a href="orders.html">订单中心</a> / <span>订单详情</span>
+  </div>
+
+  <!-- 状态 banner -->
+  <div class="status-banner">
+    <div class="status-info">
+      <div class="status-main" id="statusMain">已确认</div>
+      <div class="status-sub" id="statusSub"></div>
+    </div>
+    <div class="status-actions" id="statusActions"></div>
+  </div>
+
+  <!-- 进度时间线 -->
+  <div class="timeline-card">
+    <h2 class="section-title">订单进度</h2>
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <!-- 酒店信息 -->
+  <div class="detail-card">
+    <h2 class="section-title">预订信息</h2>
+    <div class="hotel-summary">
+      <img id="hThumb" src="" alt="">
+      <div class="hotel-summary-info">
+        <div class="hotel-summary-name" id="hName"></div>
+        <div class="hotel-summary-meta" id="hMeta"></div>
+        <div class="hotel-summary-room" id="hRoom"></div>
+      </div>
+    </div>
+    <div class="detail-row"><span class="detail-label">入住</span><span class="detail-value" id="checkIn"></span></div>
+    <div class="detail-row"><span class="detail-label">离店</span><span class="detail-value" id="checkOut"></span></div>
+    <div class="detail-row"><span class="detail-label">共计</span><span class="detail-value" id="nights"></span></div>
+    <div class="detail-row"><span class="detail-label">入住人</span><span class="detail-value" id="guestName"></span></div>
+    <div class="detail-row"><span class="detail-label">联系电话</span><span class="detail-value mono" id="guestPhone"></span></div>
+    <div class="detail-row"><span class="detail-label">身份证号</span><span class="detail-value mono" id="guestId"></span></div>
+    <div class="detail-row"><span class="detail-label">特殊需求</span><span class="detail-value" id="requests"></span></div>
+    <div class="detail-row"><span class="detail-label">订单备注</span><span class="detail-value" id="remarks">无</span></div>
+  </div>
+
+  <!-- 支付信息 -->
+  <div class="detail-card">
+    <h2 class="section-title">支付信息</h2>
+    <div class="detail-row"><span class="detail-label">订单号</span><span class="detail-value mono" id="oid"></span></div>
+    <div class="detail-row"><span class="detail-label">下单时间</span><span class="detail-value mono" id="createTime"></span></div>
+    <div class="detail-row"><span class="detail-label">支付方式</span><span class="detail-value" id="payMethod"></span></div>
+    <div class="detail-row"><span class="detail-label">支付时间</span><span class="detail-value mono" id="payTime"></span></div>
+    <div class="price-row"><span>房费</span><span>¥<span id="roomFee"></span></span></div>
+    <div class="price-row"><span>税费</span><span>¥0</span></div>
+    <div class="price-row"><span>折扣</span><span style="color:var(--red)">-¥0</span></div>
+    <div class="price-row total"><span>实付总额</span><span class="price">¥<span id="total"></span></span></div>
+  </div>
+
+  <!-- 取消记录 -->
+  <div class="detail-card" id="cancelCard" style="display:none">
+    <h2 class="section-title">取消记录</h2>
+    <div class="detail-row"><span class="detail-label">取消时间</span><span class="detail-value mono" id="cancelTime"></span></div>
+    <div class="detail-row"><span class="detail-label">退款状态</span><span class="detail-value text-green">退款成功 · 退至原支付渠道</span></div>
+  </div>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon();
+
+const oid = URL.get('oid');
+const order = OrderStore.get(oid);
+if (!order) document.body.innerHTML = '<p style="padding:4rem">订单不存在</p>';
+
+const statusText = {
+  UNPAID: { main: '⏳ 待支付', sub: '请尽快完成支付，超时订单将自动取消' },
+  PAID: { main: '✅ 预订已确认', sub: '期待您的入住 · 入住当日凭有效身份证件办理' },
+  CHECKED_IN: { main: '🏨 入住中', sub: '祝您入住愉快' },
+  COMPLETED: { main: '✓ 已完成', sub: '感谢您的入住，期待再次相见' },
+  CANCELLED: { main: '✕ 已取消', sub: '订单已取消 · 退款将返回原支付渠道' },
+  EXPIRED: { main: '⏰ 已超时', sub: '订单已超时未支付，自动取消' },
+  REFUNDED: { main: '💸 已退款', sub: '退款已返回原支付渠道' },
+};
+
+const st = statusText[order.status] || { main: order.status, sub: '' };
+document.getElementById('statusMain').textContent = st.main;
+document.getElementById('statusSub').textContent = st.sub;
+
+// 操作按钮
+const actions = document.getElementById('statusActions');
+if (order.status === 'UNPAID') {
+  actions.innerHTML = `
+    <button class="btn-primary" onclick="location.href='payment.html?oid=${order.id}'">立即支付</button>
+    <button class="btn-outline" style="color:var(--white);border-color:var(--white);" onclick="cancelOrder()">取消订单</button>
+  `;
+} else if (order.status === 'PAID') {
+  actions.innerHTML = `<button class="btn-outline" style="color:var(--white);border-color:var(--white);" onclick="cancelOrder()">申请退款</button>`;
+}
+
+// 进度时间线
+const tlSteps = [
+  { done: !!order.createTime, time: order.createTime, label: '订单已创建' },
+  { done: !!order.payTime, time: order.payTime, label: '支付成功' },
+  { done: ['CHECKED_IN', 'COMPLETED'].includes(order.status), time: null, label: '已入住' },
+  { done: order.status === 'COMPLETED', time: null, label: '已完成' },
+];
+document.getElementById('timeline').innerHTML = tlSteps.map((s, i) => `
+  <div class="timeline-item ${s.done ? 'done' : ''} ${s.done && !tlSteps.slice(i+1).some(x => x.done) ? 'current' : ''}">
+    <div class="timeline-dot"></div>
+    <div class="timeline-time">${s.time ? fmtDateTime(s.time) : '待完成'}</div>
+    <div class="timeline-label">${s.label}</div>
+  </div>
+`).join('');
+
+// 酒店信息
+document.getElementById('hThumb').src = order.hotelCover;
+document.getElementById('hName').textContent = order.hotelName;
+document.getElementById('hMeta').textContent = `${order.hotelCity} · ${order.hotelDistrict}`;
+document.getElementById('hRoom').textContent = order.roomType;
+document.getElementById('checkIn').textContent = fmtDate(order.checkIn) + ' (15:00 后)';
+document.getElementById('checkOut').textContent = fmtDate(order.checkOut) + ' (12:00 前)';
+document.getElementById('nights').textContent = `${order.nights} 晚 · ${order.guests} 成人`;
+document.getElementById('guestName').textContent = order.guestName;
+document.getElementById('guestPhone').textContent = order.guestPhone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+document.getElementById('guestId').textContent = order.guestId ? order.guestId.replace(/(\d{4})\d{10}(\w{4})/, '$1**********$2') : '未填写';
+document.getElementById('requests').textContent = order.requests && order.requests.length ? order.requests.join('、') : '无';
+document.getElementById('remarks').textContent = order.remarks || '无';
+
+// 支付信息
+document.getElementById('oid').textContent = order.id;
+document.getElementById('createTime').textContent = fmtDateTime(order.createTime);
+document.getElementById('payMethod').textContent = order.payMethod || '尚未支付';
+document.getElementById('payTime').textContent = order.payTime ? fmtDateTime(order.payTime) : '尚未支付';
+document.getElementById('roomFee').textContent = order.price;
+document.getElementById('total').textContent = order.price;
+
+// 取消记录
+if (['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(order.status)) {
+  document.getElementById('cancelCard').style.display = 'block';
+  document.getElementById('cancelTime').textContent = order.cancelTime ? fmtDateTime(order.cancelTime) : '-';
+}
+
+function cancelOrder() {
+  if (!confirm('确认取消订单？')) return;
+  OrderStore.update(order.id, { status: order.status === 'UNPAID' ? 'CANCELLED' : 'REFUNDED', cancelTime: new Date().toISOString() });
+  toast('已取消订单');
+  setTimeout(() => location.reload(), 800);
+}
+</script>
+
+</body>
+</html>

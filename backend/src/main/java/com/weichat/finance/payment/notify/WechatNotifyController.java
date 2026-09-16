@@ -1,7 +1,6 @@
 package com.weichat.finance.payment.notify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wechat.pay.java.core.notification.NotificationParser;
 import com.wechat.pay.java.core.notification.RequestParam;
 import com.weichat.finance.entity.PayNotifyLog;
 import com.weichat.finance.entity.PayOrder;
@@ -10,6 +9,8 @@ import com.weichat.finance.entity.enums.NotifyResult;
 import com.weichat.finance.entity.enums.NotifyType;
 import com.weichat.finance.entity.enums.OrderStatus;
 import com.weichat.finance.entity.enums.PayStatus;
+import com.weichat.finance.payment.client.NotificationParserManager;
+import com.weichat.finance.payment.client.NotificationParserManager.ParseResult;
 import com.weichat.finance.service.PayNotifyLogService;
 import com.weichat.finance.service.PayOrderService;
 import com.weichat.finance.service.PayTransactionService;
@@ -33,10 +34,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 微信支付 V3 回调接收（激活版：验签 + 解密 + 业务回填）。
+ * 微信支付 V3 回调接收（v2.0 智能路由版）。
  *
  * <h3>激活条件</h3>
  * 任何模式下都会落库 + 验签（REAL 模式真正解密，MOCK 模式 SDK 验签必然失败但有兜底）。
+ *
+ * <h3>v2.0 智能路由升级</h3>
+ * <p>PARTNER 模式下回调用服务商私钥签名，验签必须用服务商 Config。</p>
+ * <p>本控制器通过 {@link NotificationParserManager} 实现三段式智能路由：</p>
+ * <ol>
+ *   <li>默认 Parser（O(1)）</li>
+ *   <li>遍历所有缓存 Parser（O(N)）兜底</li>
+ *   <li>命中后记录 matchedMchId 到 t_pay_notify_log.parent_mch_id，便于审计</li>
+ * </ol>
  *
  * <h3>处理流程</h3>
  * <ol>
@@ -44,7 +54,7 @@ import java.util.Map;
  *   <li>解析请求头（含签名 4 件套）</li>
  *   <li>读取原文 body</li>
  *   <li>落库 t_pay_notify_log（无论验签结果）</li>
- *   <li>调用 SDK NotificationParser 验签 + 解密</li>
+ *   <li>智能路由调用 Parser 验签 + 解密</li>
  *   <li>解析 outTradeNo / transactionId → 幂等回填 t_pay_order + t_pay_transaction</li>
  *   <li>返回 200 OK（业务失败也建议 200，避免微信重试）</li>
  * </ol>
@@ -67,8 +77,12 @@ public class WechatNotifyController {
     private static final Logger log = LoggerFactory.getLogger(WechatNotifyController.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    /**
+     * v2.0 智能路由管理器（替换 v1.6 的单 NotificationParser）。
+     * REAL 模式下必注入；MOCK 模式下可能为 null（此时仅落库）。
+     */
     @Autowired(required = false)
-    private NotificationParser notificationParser;
+    private NotificationParserManager parserManager;
 
     @Autowired
     private PayNotifyLogService payNotifyLogService;
@@ -101,59 +115,25 @@ public class WechatNotifyController {
             return successJsonResponse();
         }
 
-        // 2. 落库
+        // 2. 落库（先于验签，保留全部原始数据用于排障）
         PayNotifyLog logEntity = saveNotifyLog(NotifyType.PAY, request, rawBody,
             wechatpaySignature, wechatpayTimestamp, wechatpayNonce, wechatpaySerial);
 
-        // 3. MOCK 模式：NotificationParser 不可用，仅落库
-        if (notificationParser == null) {
+        // 3. MOCK 模式：parserManager 不可用，仅落库
+        if (parserManager == null) {
             logEntity.setProcessResult(NotifyResult.IGNORED);
             logEntity.setErrorMessage("MOCK 模式：跳过验签/解密");
             payNotifyLogService.updateById(logEntity);
             return successJsonResponse();
         }
 
-        // 4. 验签 + 解密
-        try {
-            RequestParam param = new RequestParam.Builder()
-                .serialNumber(wechatpaySerial)
-                .nonce(wechatpayNonce)
-                .timestamp(wechatpayTimestamp)
-                .signature(wechatpaySignature)
-                .body(rawBody)
-                .signType("WECHATPAY2-SHA256-RSA2048")
-                .build();
-
-            // 解密后 JSON 字符串
-            String decryptedJson = notificationParser.parse(param, String.class);
-            logEntity.setVerifyResult(NotifyResult.PASS);
-            logEntity.setDecryptedBody(MAPPER.writeValueAsString(decryptedJson));
-            logEntity.setProcessResult(NotifyResult.SUCCESS);
-
-            // 5. 业务处理（幂等回填订单状态）
-            String outTradeNo = extractOutTradeNoFromDecrypted(decryptedJson);
-            if (outTradeNo != null) {
-                processPayNotify(outTradeNo, decryptedJson);
-            } else {
-                logEntity.setProcessResult(NotifyResult.IGNORED);
-                logEntity.setErrorMessage("回调中未找到 out_trade_no");
-            }
-
-            payNotifyLogService.updateById(logEntity);
-            return successJsonResponse();
-
-        } catch (Exception e) {
-            log.error("回调验签或解密失败: {}", e.getMessage(), e);
-            logEntity.setVerifyResult(NotifyResult.FAIL);
-            logEntity.setProcessResult(NotifyResult.FAILED);
-            logEntity.setErrorMessage("验签/解密失败: " + e.getMessage());
-            payNotifyLogService.updateById(logEntity);
-            return successJsonResponse();
-        }
+        // 4. v2.0 智能路由验签 + 解密
+        return handleVerifyAndProcess(logEntity, NotifyType.PAY, rawBody,
+            wechatpaySerial, wechatpayNonce, wechatpayTimestamp, wechatpaySignature, true);
     }
 
     /**
-     * 退款成功回调（同支付结构）。
+     * 退款成功回调。
      */
     @PostMapping("/refund/success")
     public String refundSuccess(HttpServletRequest request,
@@ -173,31 +153,93 @@ public class WechatNotifyController {
         PayNotifyLog logEntity = saveNotifyLog(NotifyType.REFUND, request, rawBody,
             wechatpaySignature, wechatpayTimestamp, wechatpayNonce, wechatpaySerial);
 
-        if (notificationParser == null) {
+        if (parserManager == null) {
             logEntity.setProcessResult(NotifyResult.IGNORED);
             logEntity.setErrorMessage("MOCK 模式：跳过验签/解密");
             payNotifyLogService.updateById(logEntity);
             return successJsonResponse();
         }
 
+        // 退款回调不需要处理业务订单（业务订单已在 RefundController 里处理）
+        return handleVerifyAndProcess(logEntity, NotifyType.REFUND, rawBody,
+            wechatpaySerial, wechatpayNonce, wechatpayTimestamp, wechatpaySignature, false);
+    }
+
+    /**
+     * 智能路由验签 + 解密 + 业务处理（支付/退款回调通用流程）。
+     *
+     * <p>三段式路由策略：</p>
+     * <ol>
+     *   <li>默认 Parser（O(1)）</li>
+     *   <li>遍历所有缓存 Parser（O(N)）</li>
+     *   <li>命中后记录 matchedMchId 到 logEntity.parentMchId</li>
+     * </ol>
+     *
+     * @param logEntity           回调日志实体（已落库，会被 update）
+     * @param notifyType          回调类型（PAY/REFUND）
+     * @param rawBody             原始 body（验签前）
+     * @param serial              Wechatpay-Serial
+     * @param nonce               Wechatpay-Nonce
+     * @param timestamp           Wechatpay-Timestamp
+     * @param signature           Wechatpay-Signature
+     * @param processBusiness     是否处理业务订单（支付=true，退款=false）
+     * @return 200 OK 响应
+     */
+    private String handleVerifyAndProcess(PayNotifyLog logEntity, String notifyType, String rawBody,
+                                           String serial, String nonce, String timestamp, String signature,
+                                           boolean processBusiness) {
         try {
+            // 构造 SDK RequestParam
             RequestParam param = new RequestParam.Builder()
-                .serialNumber(wechatpaySerial)
-                .nonce(wechatpayNonce)
-                .timestamp(wechatpayTimestamp)
-                .signature(wechatpaySignature)
+                .serialNumber(serial)
+                .nonce(nonce)
+                .timestamp(timestamp)
+                .signature(signature)
                 .body(rawBody)
                 .signType("WECHATPAY2-SHA256-RSA2048")
                 .build();
-            String decryptedJson = notificationParser.parse(param, String.class);
+
+            // v2.0 智能路由：默认 + 遍历兜底
+            long startTime = System.currentTimeMillis();
+            ParseResult result = parserManager.parseWithFallback(param, String.class);
+            long costMs = System.currentTimeMillis() - startTime;
+
+            if (!result.isSuccess()) {
+                log.warn("[回调路由] ❌ 所有 Parser 验签失败 ({}ms)", costMs);
+                logEntity.setVerifyResult(NotifyResult.FAIL);
+                logEntity.setProcessResult(NotifyResult.FAILED);
+                logEntity.setErrorMessage("验签/解密失败: " + result.getErrorMessage());
+                payNotifyLogService.updateById(logEntity);
+                return successJsonResponse();
+            }
+
+            // 验签成功：记录路由命中信息（用于 PARTNER 模式审计）
+            String matchedMchId = result.getMatchedMchId();
+            String decryptedJson = result.getBodyAs(String.class);
+            log.info("[回调路由] ✅ 验签成功 ({}ms): matchedMchId={}, notifyType={}",
+                costMs, matchedMchId, notifyType);
+
             logEntity.setVerifyResult(NotifyResult.PASS);
             logEntity.setDecryptedBody(MAPPER.writeValueAsString(decryptedJson));
+            logEntity.setParentMchId(matchedMchId);  // 记录命中的 mchId，便于后续审计
             logEntity.setProcessResult(NotifyResult.SUCCESS);
+
+            // 业务处理（幂等回填订单状态）
+            if (processBusiness) {
+                String outTradeNo = extractOutTradeNoFromDecrypted(decryptedJson);
+                if (outTradeNo != null) {
+                    processPayNotify(outTradeNo, decryptedJson);
+                } else {
+                    logEntity.setProcessResult(NotifyResult.IGNORED);
+                    logEntity.setErrorMessage("回调中未找到 out_trade_no");
+                }
+            }
+
             payNotifyLogService.updateById(logEntity);
             return successJsonResponse();
 
         } catch (Exception e) {
-            log.error("退款回调验签/解密失败: {}", e.getMessage(), e);
+            log.error("回调验签或解密失败: {}", e.getMessage(), e);
             logEntity.setVerifyResult(NotifyResult.FAIL);
             logEntity.setProcessResult(NotifyResult.FAILED);
             logEntity.setErrorMessage("验签/解密失败: " + e.getMessage());
@@ -264,6 +306,7 @@ public class WechatNotifyController {
         PayNotifyLog logEntity = new PayNotifyLog();
         logEntity.setNotifyType(notifyType);
         logEntity.setMchId(extractMchIdFromBody(rawBody));
+        logEntity.setSubMchId(extractSubMchIdFromBody(rawBody));  // v2.0 增加子商户号识别
         logEntity.setHeaders(MAPPER.writeValueAsString(headers));
         logEntity.setRawBody(rawBody);
         logEntity.setVerifyResult(NotifyResult.SKIPPED_PHASE3);
@@ -301,6 +344,22 @@ public class WechatNotifyController {
             return id != null ? id.toString() : "UNKNOWN";
         } catch (Exception e) {
             return "UNKNOWN";
+        }
+    }
+
+    /**
+     * v2.0：提取 sub_mch_id（PARTNER 模式字段）。
+     *
+     * <p>明代特约商户回调的加密 payload 中包含 sub_mch_id，用于后续业务处理和审计。
+     * 提取失败返回 null（DIRECT 模式没有此字段）。</p>
+     */
+    private String extractSubMchIdFromBody(String body) {
+        try {
+            Map<?, ?> json = MAPPER.readValue(body, Map.class);
+            Object id = json.get("sub_mch_id");
+            return id != null ? id.toString() : null;
+        } catch (Exception e) {
+            return null;
         }
     }
 

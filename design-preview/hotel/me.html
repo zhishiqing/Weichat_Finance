@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的 · Hotel Booking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.page { max-width: 96rem; margin: 0 auto; padding: var(--space-5) var(--space-3); }
+
+.profile-banner {
+  background: linear-gradient(135deg, var(--house-green) 0%, var(--green-uplift) 100%);
+  color: var(--text-white);
+  border-radius: var(--card-radius);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  box-shadow: var(--card-shadow);
+}
+.avatar {
+  width: 8rem;
+  height: 8rem;
+  border-radius: 50%;
+  background: var(--green-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.2rem;
+  font-weight: 700;
+  color: var(--white);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.profile-info { flex: 1; }
+.profile-name { font-size: 2.6rem; font-weight: 600; margin-bottom: 0.4rem; }
+.profile-phone { font-size: 1.4rem; color: var(--text-white-soft); margin-bottom: var(--space-2); }
+.profile-tag { display: inline-block; padding: 0.3rem 1rem; background: var(--gold); color: var(--white); border-radius: var(--chip-radius); font-size: 1.2rem; font-weight: 600; }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.stat-card {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--space-4);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.stat-card:hover { transform: translateY(-4px); box-shadow: var(--hover-shadow); }
+.stat-icon { font-size: 2.4rem; margin-bottom: var(--space-1); }
+.stat-num { font-size: 2.4rem; font-weight: 700; color: var(--starbucks-green); }
+.stat-label { font-size: 1.3rem; color: var(--text-black-soft); margin-top: var(--space-1); }
+
+.menu-section { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); overflow: hidden; margin-bottom: var(--space-4); }
+.menu-title { font-size: 1.4rem; font-weight: 600; color: var(--text-black-soft); padding: var(--space-3) var(--space-4); background: var(--neutral-cool); }
+.menu-grid { display: grid; grid-template-columns: repeat(4, 1fr); padding: var(--space-3); gap: var(--space-2); }
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.menu-item:hover { background: var(--green-light); }
+.menu-item-icon { width: 4.8rem; height: 4.8rem; border-radius: 50%; background: var(--green-light); color: var(--starbucks-green); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; }
+.menu-item-label { font-size: 1.3rem; color: var(--text-black); }
+
+.section-card { background: var(--white); border-radius: var(--card-radius); box-shadow: var(--card-shadow); padding: var(--space-4); margin-bottom: var(--space-4); }
+.section-title { font-size: 1.6rem; font-weight: 600; color: var(--text-black); margin-bottom: var(--space-3); }
+
+.list-row { display: flex; align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--ceramic); cursor: pointer; transition: background 0.2s ease; }
+.list-row:last-child { border-bottom: none; }
+.list-row:hover { background: var(--neutral-cool); }
+.list-row-icon { width: 3.6rem; height: 3.6rem; border-radius: 50%; background: var(--green-light); color: var(--starbucks-green); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-right: var(--space-3); }
+.list-row-info { flex: 1; }
+.list-row-title { font-size: 1.5rem; color: var(--text-black); font-weight: 500; }
+.list-row-sub { font-size: 1.2rem; color: var(--text-black-soft); margin-top: 0.2rem; }
+.list-row-arrow { color: var(--text-black-soft); font-size: 1.8rem; }
+
+.logout-btn { width: 100%; }
+
+@media (max-width: 768px) {
+  .stats-grid, .menu-grid { grid-template-columns: repeat(2, 1fr); }
+  .profile-banner { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div id="nav-slot"></div>
+
+<main class="page">
+
+  <!-- 头像 + 会员 -->
+  <div class="profile-banner">
+    <div class="avatar" id="avatar">L</div>
+    <div class="profile-info">
+      <div class="profile-name" id="userName">Loading...</div>
+      <div class="profile-phone" id="userPhone">138****0000</div>
+      <span class="profile-tag">⭐ 金卡会员 · 累计入住 12 晚</span>
+    </div>
+  </div>
+
+  <!-- 数据概览 -->
+  <div class="stats-grid">
+    <div class="stat-card" onclick="location.href='orders.html'">
+      <div class="stat-icon">📋</div>
+      <div class="stat-num" id="statOrders">0</div>
+      <div class="stat-label">订单总数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">❤️</div>
+      <div class="stat-num">3</div>
+      <div class="stat-label">收藏酒店</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎫</div>
+      <div class="stat-num">5</div>
+      <div class="stat-label">优惠券</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⭐</div>
+      <div class="stat-num">888</div>
+      <div class="stat-label">成长值</div>
+    </div>
+  </div>
+
+  <!-- 常用功能 -->
+  <div class="menu-section">
+    <div class="menu-title">常用功能</div>
+    <div class="menu-grid">
+      <div class="menu-item" onclick="location.href='orders.html'">
+        <div class="menu-item-icon">📋</div>
+        <div class="menu-item-label">我的订单</div>
+      </div>
+      <div class="menu-item" onclick="toast('收藏功能开发中')">
+        <div class="menu-item-icon">❤️</div>
+        <div class="menu-item-label">我的收藏</div>
+      </div>
+      <div class="menu-item" onclick="toast('优惠券功能开发中')">
+        <div class="menu-item-icon">🎫</div>
+        <div class="menu-item-label">优惠券</div>
+      </div>
+      <div class="menu-item" onclick="toast('钱包功能开发中')">
+        <div class="menu-item-icon">💰</div>
+        <div class="menu-item-label">钱包</div>
+      </div>
+      <div class="menu-item" onclick="toast('积分商城开发中')">
+        <div class="menu-item-icon">⭐</div>
+        <div class="menu-item-label">积分商城</div>
+      </div>
+      <div class="menu-item" onclick="toast('会员权益开发中')">
+        <div class="menu-item-icon">👑</div>
+        <div class="menu-item-label">会员权益</div>
+      </div>
+      <div class="menu-item" onclick="toast('邀请有礼开发中')">
+        <div class="menu-item-icon">🎁</div>
+        <div class="menu-item-label">邀请有礼</div>
+      </div>
+      <div class="menu-item" onclick="toast('客服中心开发中')">
+        <div class="menu-item-icon">💬</div>
+        <div class="menu-item-label">客服中心</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 账户设置 -->
+  <div class="section-card">
+    <h2 class="section-title">账户设置</h2>
+    <div class="list-row" onclick="toast('个人信息功能开发中')">
+      <div class="list-row-icon">👤</div>
+      <div class="list-row-info">
+        <div class="list-row-title">个人信息</div>
+        <div class="list-row-sub">头像、昵称、性别</div>
+      </div>
+      <div class="list-row-arrow">›</div>
+    </div>
+    <div class="list-row" onclick="toast('实名认证功能开发中')">
+      <div class="list-row-icon">🪪</div>
+      <div class="list-row-info">
+        <div class="list-row-title">实名认证</div>
+        <div class="list-row-sub">已认证 · 提升预订额度</div>
+      </div>
+      <div class="list-row-arrow">›</div>
+    </div>
+    <div class="list-row" onclick="toast('账户安全功能开发中')">
+      <div class="list-row-icon">🔒</div>
+      <div class="list-row-info">
+        <div class="list-row-title">账户安全</div>
+        <div class="list-row-sub">登录密码 · 手机绑定</div>
+      </div>
+      <div class="list-row-arrow">›</div>
+    </div>
+    <div class="list-row" onclick="toast('收货地址功能开发中')">
+      <div class="list-row-icon">📍</div>
+      <div class="list-row-info">
+        <div class="list-row-title">常用地址</div>
+        <div class="list-row-sub">已添加 3 个</div>
+      </div>
+      <div class="list-row-arrow">›</div>
+    </div>
+    <div class="list-row" onclick="toast('发票抬头功能开发中')">
+      <div class="list-row-icon">🧾</div>
+      <div class="list-row-info">
+        <div class="list-row-title">发票抬头</div>
+        <div class="list-row-sub">管理开票信息</div>
+      </div>
+      <div class="list-row-arrow">›</div>
+    </div>
+  </div>
+
+  <!-- 帮助反馈 -->
+  <div class="section-card">
+    <h2 class="section-title">帮助与反馈</h2>
+    <div class="list-row" onclick="toast('帮助中心开发中')">
+      <div class="list-row-icon">❓</div>
+      <div class="list-row-info"><div class="list-row-title">帮助中心</div></div>
+      <div class="list-row-arrow">›</div>
+    </div>
+    <div class="list-row" onclick="toast('意见反馈开发中')">
+      <div class="list-row-icon">💡</div>
+      <div class="list-row-info"><div class="list-row-title">意见反馈</div></div>
+      <div class="list-row-arrow">›</div>
+    </div>
+    <div class="list-row" onclick="toast('关于我们开发中')">
+      <div class="list-row-icon">ℹ️</div>
+      <div class="list-row-info">
+        <div class="list-row-title">关于我们</div>
+        <div class="list-row-sub">v1.0.0 · 星巴克风格 Demo</div>
+      </div>
+      <div class="list-row-arrow">›</div>
+    </div>
+  </div>
+
+  <button class="btn-ghost btn-lg logout-btn" onclick="doLogout()">退出登录</button>
+</main>
+
+<div id="footer-slot"></div>
+<div id="frap-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/components.js"></script>
+<script>
+mountCommon('me');
+
+const user = getUser();
+if (!user) {
+  setTimeout(() => location.href = 'login.html?redirect=' + encodeURIComponent(location.href), 500);
+} else {
+  document.getElementById('avatar').textContent = user.name.charAt(0).toUpperCase();
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('userPhone').textContent = user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+  document.getElementById('statOrders').textContent = OrderStore.list().length;
+}
+
+function doLogout() {
+  if (!confirm('确认退出登录？')) return;
+  logout();
+  toast('已退出登录');
+  setTimeout(() => location.href = 'index.html', 800);
+}
+</script>
+
+</body>
+</html>
