@@ -13,6 +13,109 @@
 
 ---
 
+## v2.0-alpha · 2026-09-16
+
+### Added · 服务商模式架构（PARTNER MODE）
+
+**目标**：为 v2.0 服务商模式铺路，兼容现有 v1.6 直连商户（DIRECT）。
+
+#### 1. Flyway V6：增加服务商字段
+
+| 表 | 新增字段 |
+|---|---|
+| `t_merchant_config` | `parent_mch_id`（服务商号）、`sub_app_id`（特约商户 AppID） |
+| `t_pay_order` | `parent_mch_id`、`sub_mch_id`、`sub_app_id` |
+| `t_pay_transaction` | `parent_mch_id`、`sub_mch_id`、`sub_app_id` |
+| `t_pay_refund` | `parent_mch_id`、`sub_mch_id`、`sub_app_id` |
+| `t_pay_notify_log` | `parent_mch_id`、`sub_mch_id`（用于回调路由） |
+
+新增索引：`idx_parent_mch_id`、`idx_sub_mch_status`、`idx_parent_sub_mch`。
+
+#### 2. WechatPayConfigManager（多 Config 缓存）
+
+**核心抽象**：PARTNER 模式下的 SDK Config 必须用服务商号 + 服务商私钥，而不是子商户。
+
+```java
+// DIRECT 模式：用商户自身 mchId 查 Config
+// PARTNER 模式：用 parentMchId（服务商号）查 Config
+Config cfg = configManager.getConfigForMerchant(merchant);
+```
+
+**特点**：
+- `@PostConstruct` 启动期预加载默认 DIRECT 商户 Config（向后兼容 v1.6）
+- `ConcurrentHashMap` 缓存多 Config（按 mchId）
+- 暴露 `preloadPartnerConfig()` API 给 CommandLineRunner 启动期批量预加载
+
+#### 3. NotificationParserManager（多 Parser 缓存）
+
+PARTNER 模式下回调用服务商签名，必须用服务商 Config 验签。
+
+**v1.6 实现**：暴露 `getParserForMerchant()` 接口 + `getParserForConfig()` API，**完整的多 parser 路由留待 v2.0.1**（需要遍历所有 parser 试解密）。
+
+#### 4. RealService 自动适配 DIRECT/PARTNER
+
+`RealJsapiService`、`RealNativeService`、`RealRefundService` 都改造：
+
+```java
+if (MerchantMode.PARTNER.equals(merchant.getMode())) {
+    sdkReq.setAppid(merchant.getSubAppId());
+    // 反射调用 SDK setSubMchid（不同 SDK 版本兼容）
+    try {
+        sdkReq.getClass().getMethod("setSubMchid", String.class)
+            .invoke(sdkReq, merchant.getMchId());
+    } catch (...) {
+        sdkReq.setMchid(merchant.getMchId()); // 回退
+    }
+}
+```
+
+#### 5. E2E 验证（DIRECT 模式未破坏）
+
+| 测试 | 结果 |
+|---|---|
+| Flyway V6 自动迁移 | ✅ `now at version v6` |
+| WechatPayConfigManager 默认 Config 加载 | ✅ `mchId=1674723182` |
+| DIRECT 模式 JSAPI 下单 | ✅ 拿到 `wx4608231731619003450000047820263000` |
+| DIRECT 模式 Native 下单 | ✅ 拿到 `weixin://wxpay/bizpayurl?pr=5QQN6s1JFQim2m8t` |
+| PayOrderPollScheduler 3s 轮询 | ✅ 持续运行 |
+
+#### 6. 待完善（v2.0.1 收尾）
+
+- ❌ NotificationController 多 Parser 智能路由（先用默认 parser，失败后遍历所有缓存 parser）
+- ❌ MerchantConfigService.listEnabledPartnerMerchants()（启动期批量预加载服务商 Config）
+- ❌ MerchantConfigController 增加 PARTNER 模式 CRUD（服务商进件）
+- ❌ `t_merchant_config` 配置示例（PARTNER 模式真实数据）
+
+#### 7. 架构设计图
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Controller（jsapi/native/refund/notify）             │
+└──────────────────┬──────────────────────────────────┘
+                   │ merchant: MerchantConfig
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│ RealXxxService                                       │
+│  ├─ DIRECT mode  → sdkService(merchant)             │
+│  └─ PARTNER mode → setAppid(sub_app_id)             │
+│                  → setSubMchid(mchId)               │
+└──────────────────┬──────────────────────────────────┘
+                   │ Config
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│ WechatPayConfigManager                               │
+│  ├─ DIRECT 模式：cache[mchId]                        │
+│  └─ PARTNER 模式：cache[parentMchId]                 │
+└──────────────────┬──────────────────────────────────┘
+                   │ Config（签名用）
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│ 微信支付 V3 SDK（JSAPI / Native / Refund Service）   │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
 ## v1.6 · 2026-09-16
 
 ### Added · REAL 模式全打通

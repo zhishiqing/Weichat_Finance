@@ -49,6 +49,16 @@ public class MerchantConfig implements Serializable {
         allowableValues = {MerchantMode.DIRECT, MerchantMode.PARTNER})
     private String mode;
 
+    @Schema(description = "服务商号（PARTNER 模式必填：当前商户配置所属服务商；DIRECT 模式为空）",
+        example = "1000400645",
+        nullable = true)
+    private String parentMchId;
+
+    @Schema(description = "特约商户 AppID（PARTNER 模式必填：用于业务请求体；DIRECT 模式为空）",
+        example = "wx_yyy_yyy_yyy",
+        nullable = true)
+    private String subAppId;
+
     @Schema(description = "V3 密钥（32 位，用于回调解密 resource.ciphertext）", example = "abcdefghijklmnopqrstuvwxyz123456")
     private String apiV3Key;
 

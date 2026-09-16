@@ -8,11 +8,14 @@ import com.wechat.pay.java.service.refund.model.QueryByOutRefundNoRequest;
 import com.wechat.pay.java.service.refund.model.Refund;
 import com.weichat.finance.entity.MerchantConfig;
 import com.weichat.finance.entity.PayRefund;
+import com.weichat.finance.entity.enums.MerchantMode;
+import com.weichat.finance.payment.client.WechatPayConfigManager;
 import com.weichat.finance.payment.config.WechatPayProperties;
 import com.weichat.finance.payment.v3.refund.request.RefundCreateRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -31,21 +34,26 @@ public class RealRefundService implements com.weichat.finance.payment.v3.refund.
     private static final Logger log = LoggerFactory.getLogger(RealRefundService.class);
 
     @Autowired
+    @Qualifier("wechatPayConfig")
     private Config wechatPayConfig;
 
     @Autowired
     private WechatPayProperties wechatPayProperties;
 
-    private RefundService sdkService() {
+    @Autowired
+    private WechatPayConfigManager configManager;
+
+    private RefundService sdkService(MerchantConfig merchant) {
+        Config cfg = configManager.getConfigForMerchant(merchant);
         return new RefundService.Builder()
-            .config(wechatPayConfig)
+            .config(cfg)
             .build();
     }
 
     @Override
     public RefundCreateResponse create(RefundCreateRequest request, MerchantConfig merchant, PayRefund refundEntity) {
-        log.info("[Real] 申请退款: outRefundNo={}, outTradeNo={}, amountRefund={}",
-            request.getOutRefundNo(), request.getOutTradeNo(), request.getAmountRefund());
+        log.info("[Real] 申请退款: outRefundNo={}, outTradeNo={}, amountRefund={}, mode={}",
+            request.getOutRefundNo(), request.getOutTradeNo(), request.getAmountRefund(), merchant.getMode());
 
         CreateRequest sdkReq = new CreateRequest();
         sdkReq.setOutTradeNo(request.getOutTradeNo());
@@ -55,6 +63,16 @@ public class RealRefundService implements com.weichat.finance.payment.v3.refund.
             ? merchant.getNotifyUrlBase() + "/notify/v3/refund/success"
             : wechatPayProperties.getNotifyUrlBase() + "/notify/v3/refund/success");
 
+        // PARTNER 模式：传 sub_mch_id
+        if (MerchantMode.PARTNER.equals(merchant.getMode())) {
+            try {
+                sdkReq.getClass().getMethod("setSubMchid", String.class)
+                    .invoke(sdkReq, merchant.getMchId());
+            } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+                log.debug("[Real] SDK 不支持 setSubMchid（退款创建），忽略: {}", e.getMessage());
+            }
+        }
+
         AmountReq amount = new AmountReq();
         amount.setRefund(request.getAmountRefund());
         amount.setTotal(request.getAmountTotal());
@@ -62,7 +80,7 @@ public class RealRefundService implements com.weichat.finance.payment.v3.refund.
         sdkReq.setAmount(amount);
 
         try {
-            Refund refund = sdkService().create(sdkReq);
+            Refund refund = sdkService(merchant).create(sdkReq);
             log.info("[Real] 微信受理退款: refundId={}, status={}", refund.getRefundId(), refund.getStatus());
 
             RefundCreateResponse response = new RefundCreateResponse();
@@ -80,12 +98,22 @@ public class RealRefundService implements com.weichat.finance.payment.v3.refund.
 
     @Override
     public RefundCreateResponse query(String outRefundNo, MerchantConfig merchant) {
-        log.info("[Real] 查询退款单: outRefundNo={}", outRefundNo);
+        log.info("[Real] 查询退款单: outRefundNo={}, mode={}", outRefundNo, merchant.getMode());
         QueryByOutRefundNoRequest req = new QueryByOutRefundNoRequest();
         req.setOutRefundNo(outRefundNo);
 
+        // PARTNER 模式：传 sub_mch_id
+        if (MerchantMode.PARTNER.equals(merchant.getMode())) {
+            try {
+                req.getClass().getMethod("setSubMchid", String.class)
+                    .invoke(req, merchant.getMchId());
+            } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+                log.debug("[Real] SDK 不支持 setSubMchid（退款查询），忽略: {}", e.getMessage());
+            }
+        }
+
         try {
-            Refund refund = sdkService().queryByOutRefundNo(req);
+            Refund refund = sdkService(merchant).queryByOutRefundNo(req);
             RefundCreateResponse response = new RefundCreateResponse();
             response.setOutRefundNo(outRefundNo);
             response.setRefundId(refund.getRefundId());

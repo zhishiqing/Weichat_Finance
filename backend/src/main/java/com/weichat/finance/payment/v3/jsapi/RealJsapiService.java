@@ -10,11 +10,14 @@ import com.wechat.pay.java.service.payments.jsapi.model.PrepayResponse;
 import com.wechat.pay.java.service.payments.jsapi.model.QueryOrderByOutTradeNoRequest;
 import com.wechat.pay.java.service.payments.model.Transaction;
 import com.weichat.finance.entity.MerchantConfig;
+import com.weichat.finance.entity.enums.MerchantMode;
+import com.weichat.finance.payment.client.WechatPayConfigManager;
 import com.weichat.finance.payment.config.WechatPayProperties;
 import com.weichat.finance.payment.v3.jsapi.request.JsapiCreateRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -47,26 +50,54 @@ public class RealJsapiService implements com.weichat.finance.payment.v3.jsapi.Js
     private static final Logger log = LoggerFactory.getLogger(RealJsapiService.class);
 
     @Autowired
+    @Qualifier("wechatPayConfig")
     private Config wechatPayConfig;
 
     @Autowired
     private WechatPayProperties wechatPayProperties;
 
+    /**
+     * v2.0 服务商 Config 管理器（多 Config 路由）。
+     * 保留 wechatPayConfig 用于向后兼容（NotificationParser / 默认商户）。
+     */
+    @Autowired
+    private WechatPayConfigManager configManager;
+
     /** SDK JSAPI Service（每个请求 new 一次，因为底层 HttpClient 不复用） */
-    private JsapiService sdkService() {
+    private JsapiService sdkService(MerchantConfig merchant) {
+        Config cfg = configManager.getConfigForMerchant(merchant);
         return new JsapiService.Builder()
-            .config(wechatPayConfig)
+            .config(cfg)
             .build();
     }
 
     @Override
     public JsapiCreateResponse create(JsapiCreateRequest request, MerchantConfig merchant) {
-        log.info("[Real] 创建 JSAPI 订单: outTradeNo={}, amountTotal={}, openid={}",
-            request.getOutTradeNo(), request.getAmountTotal(), request.getOpenid());
+        log.info("[Real] 创建 JSAPI 订单: outTradeNo={}, amountTotal={}, openid={}, mode={}",
+            request.getOutTradeNo(), request.getAmountTotal(), request.getOpenid(), merchant.getMode());
 
         PrepayRequest sdkReq = new PrepayRequest();
-        sdkReq.setAppid(merchant.getAppId() != null ? merchant.getAppId() : wechatPayProperties.getMerchant().getAppId());
-        sdkReq.setMchid(merchant.getMchId());
+        // PARTNER 模式：appid 传 sub_app_id，mchid 传子商户号（SDK 也支持 sub_mchid）
+        if (MerchantMode.PARTNER.equals(merchant.getMode())) {
+            sdkReq.setAppid(merchant.getSubAppId() != null
+                ? merchant.getSubAppId()
+                : wechatPayProperties.getMerchant().getAppId());
+            // SDK PrepayRequest.setSubMchid() 是特约商户号字段（PARTNER 模式专用）
+            // 注：v1.6 SDK 0.2.17 PrepayRequest 有 setSubMchid/subMchid，部分版本只有 setMchid
+            try {
+                sdkReq.getClass().getMethod("setSubMchid", String.class)
+                    .invoke(sdkReq, merchant.getMchId());
+            } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+                // SDK 版本不支持 setSubMchid：退回到 setMchid（用子商户号）
+                log.debug("[Real] SDK 不支持 setSubMchid，回退 setMchid: {}", e.getMessage());
+                sdkReq.setMchid(merchant.getMchId());
+            }
+        } else {
+            sdkReq.setAppid(merchant.getAppId() != null
+                ? merchant.getAppId()
+                : wechatPayProperties.getMerchant().getAppId());
+            sdkReq.setMchid(merchant.getMchId());
+        }
         sdkReq.setOutTradeNo(request.getOutTradeNo());
         sdkReq.setDescription(request.getDescription());
         sdkReq.setAttach(request.getAttach());
@@ -88,7 +119,7 @@ public class RealJsapiService implements com.weichat.finance.payment.v3.jsapi.Js
         sdkReq.setPayer(payer);
 
         try {
-            PrepayResponse prepayResp = sdkService().prepay(sdkReq);
+            PrepayResponse prepayResp = sdkService(merchant).prepay(sdkReq);
             log.info("[Real] 微信返回 prepay_id={}", prepayResp.getPrepayId());
 
             JsapiCreateResponse response = new JsapiCreateResponse();
@@ -106,11 +137,22 @@ public class RealJsapiService implements com.weichat.finance.payment.v3.jsapi.Js
     public JsapiQueryResponse queryByOutTradeNo(String outTradeNo, MerchantConfig merchant) {
         log.info("[Real] 查询订单: outTradeNo={}", outTradeNo);
         QueryOrderByOutTradeNoRequest req = new QueryOrderByOutTradeNoRequest();
-        req.setMchid(merchant.getMchId());
+        // PARTNER 模式：必须传 sub_mchid（特约商户号），mchid 传服务商号或不传
+        if (MerchantMode.PARTNER.equals(merchant.getMode())) {
+            try {
+                req.getClass().getMethod("setSubMchid", String.class)
+                    .invoke(req, merchant.getMchId());
+            } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+                log.debug("[Real] SDK 不支持 setSubMchid（查单），回退 setMchid: {}", e.getMessage());
+                req.setMchid(merchant.getMchId());
+            }
+        } else {
+            req.setMchid(merchant.getMchId());
+        }
         req.setOutTradeNo(outTradeNo);
 
         try {
-            Transaction tx = sdkService().queryOrderByOutTradeNo(req);
+            Transaction tx = sdkService(merchant).queryOrderByOutTradeNo(req);
             return convert(tx, outTradeNo);
         } catch (Exception e) {
             log.error("[Real] 查询订单失败: outTradeNo={}, error={}", outTradeNo, e.getMessage(), e);
@@ -122,10 +164,20 @@ public class RealJsapiService implements com.weichat.finance.payment.v3.jsapi.Js
     public void closeByOutTradeNo(String outTradeNo, MerchantConfig merchant) {
         log.info("[Real] 关单: outTradeNo={}", outTradeNo);
         CloseOrderRequest req = new CloseOrderRequest();
-        req.setMchid(merchant.getMchId());
+        if (MerchantMode.PARTNER.equals(merchant.getMode())) {
+            try {
+                req.getClass().getMethod("setSubMchid", String.class)
+                    .invoke(req, merchant.getMchId());
+            } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+                log.debug("[Real] SDK 不支持 setSubMchid（关单），回退 setMchid: {}", e.getMessage());
+                req.setMchid(merchant.getMchId());
+            }
+        } else {
+            req.setMchid(merchant.getMchId());
+        }
         req.setOutTradeNo(outTradeNo);
         try {
-            sdkService().closeOrder(req);
+            sdkService(merchant).closeOrder(req);
             log.info("[Real] 关单成功: outTradeNo={}", outTradeNo);
         } catch (Exception e) {
             log.error("[Real] 关单失败: outTradeNo={}, error={}", outTradeNo, e.getMessage(), e);

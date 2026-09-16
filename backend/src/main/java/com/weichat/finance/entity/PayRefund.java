@@ -50,6 +50,18 @@ public class PayRefund implements Serializable {
     @Schema(description = "商户号", example = "1900000109")
     private String mchId;
 
+    @Schema(description = "服务商号（PARTNER 模式必填，DIRECT 模式为空）",
+        example = "1000400645", nullable = true)
+    private String parentMchId;
+
+    @Schema(description = "特约商户号（PARTNER 模式必填，DIRECT 模式等于 mch_id）",
+        example = "1900000109", nullable = true)
+    private String subMchId;
+
+    @Schema(description = "特约商户 AppID（PARTNER 模式必填，DIRECT 模式等于 app_id）",
+        example = "wx_sub_appid", nullable = true)
+    private String subAppId;
+
     @Schema(description = "微信退款单号（SUCCESS 后才有）",
         example = "50300308202609140001234567890")
     private String refundId;

@@ -41,8 +41,21 @@ public class PayOrder implements Serializable {
     @Schema(description = "商户订单号（业务侧生成，唯一）", example = "ORDER_20260914_001", maxLength = 32)
     private String outTradeNo;
 
-    @Schema(description = "商户号", example = "1900000109", maxLength = 32)
+    @Schema(description = "商户号（直连商户或特约商户号，PARTNER 模式下等于 sub_mch_id）",
+        example = "1674723182", maxLength = 32)
     private String mchId;
+
+    @Schema(description = "服务商号（PARTNER 模式必填，DIRECT 模式为空）",
+        example = "1000400645", maxLength = 32, nullable = true)
+    private String parentMchId;
+
+    @Schema(description = "特约商户号（PARTNER 模式必填，DIRECT 模式等于 mch_id）",
+        example = "1900000109", maxLength = 32, nullable = true)
+    private String subMchId;
+
+    @Schema(description = "特约商户 AppID（PARTNER 模式必填，DIRECT 模式等于 app_id）",
+        example = "wx_sub_appid", maxLength = 32, nullable = true)
+    private String subAppId;
 
     @Schema(description = "公众号或小程序 AppID", example = "wx8888888888888888", maxLength = 32)
     private String appId;
