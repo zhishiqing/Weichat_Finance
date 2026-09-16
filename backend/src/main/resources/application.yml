@@ -77,8 +77,8 @@ scheduler:
     initial-delay-ms: 60000     # 60 秒
   pay-order-poll:               # v1.4 拉起支付后主动轮询查单
     enabled: true
-    interval-ms: 10000          # 10 秒扫描
-    initial-delay-ms: 5000      # 启动后 5 秒首次
+    interval-ms: 3000           # 3 秒扫描
+    initial-delay-ms: 3000      # 启动后 3 秒首次
   reconciliation:
     cron: "0 0 3 * * ?"         # 每日 03:00 执行对账（避开次日 04:00 前账单未生成）
 

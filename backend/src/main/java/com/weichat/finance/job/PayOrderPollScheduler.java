@@ -27,16 +27,14 @@ import java.util.List;
  *
  * <h3>背景</h3>
  * 微信支付回调地址暂不可配置，改为"拉起支付后主动轮询查单"策略。
- * 下单成功后立即入队（{@code next_query_at = NOW()}），调度器每 10 秒扫描一次。
+ * 下单成功后立即入队（{@code next_query_at = NOW()}），调度器每 3 秒扫描一次。
  *
  * <h3>轮询策略</h3>
  * <ul>
- *   <li>首次入队：立即查</li>
- *   <li>第 2 次：10s 后</li>
- *   <li>第 3 次：20s 后</li>
- *   <li>第 4 次：40s 后</li>
- *   <li>第 5 次起：60s 后（封顶）</li>
- *   <li>达到最大次数：30 分钟（30 次）后停止轮询</li>
+ *   <li>首次入队：立即查（下一次调度执行时，~3s 内）</li>
+ *   <li>NOTPAY 等未支付状态：固定 3 秒后再查（v1.5.1 用户要求"3s 一次"）</li>
+ *   <li>SUCCESS / CLOSED / REFUNDED / REVOKED：停止轮询</li>
+ *   <li>最多轮询：30 分钟（超时停止，移交兜底查单）</li>
  * </ul>
  *
  * <h3>终止条件</h3>
@@ -60,7 +58,7 @@ public class PayOrderPollScheduler {
     private static final int BATCH_SIZE = 50;
 
     /** 基础轮询间隔（秒） */
-    private static final int BASE_INTERVAL_SECONDS = 10;
+    private static final int BASE_INTERVAL_SECONDS = 3;
 
     /** 最大轮询次数（达到后停止轮询，移交兜底查单） */
     private static final int MAX_POLL_TIMES = 30;
@@ -89,8 +87,8 @@ public class PayOrderPollScheduler {
     /**
      * 每 10 秒执行一次扫描。
      */
-    @Scheduled(fixedRateString = "${scheduler.pay-order-poll.interval-ms:10000}",
-               initialDelayString = "${scheduler.pay-order-poll.initial-delay-ms:5000}")
+    @Scheduled(fixedRateString = "${scheduler.pay-order-poll.interval-ms:3000}",
+               initialDelayString = "${scheduler.pay-order-poll.initial-delay-ms:3000}")
     public void pollDueOrders() {
         if (!enabled) {
             return;
@@ -172,9 +170,8 @@ public class PayOrderPollScheduler {
         if (resp == null) {
             log.error("[轮询查单] 查单最终失败: outTradeNo={}, error={}",
                 outTradeNo, lastException != null ? lastException.getMessage() : "未知");
-            // 失败也推进 next_query_at（避免死循环）
-            LocalDateTime nextAt = payOrderService.computeNextQueryTime(BASE_INTERVAL_SECONDS,
-                order.getNextQueryAt() == null ? 1 : 2);
+            // 失败也推进 next_query_at（避免死循环），固定 3 秒
+            LocalDateTime nextAt = LocalDateTime.now().plusSeconds(BASE_INTERVAL_SECONDS);
             payOrderService.setNextQueryTime(order.getId(), nextAt);
             return;
         }
@@ -194,8 +191,9 @@ public class PayOrderPollScheduler {
             return;
         }
 
-        // 4. 非终态（NOTPAY 等）：推进 next_query_at
-        LocalDateTime nextAt = payOrderService.computeNextQueryTime(BASE_INTERVAL_SECONDS, 1);
+        // 4. 非终态（NOTPAY 等）：推进 next_query_at（固定 3 秒，匹配调度频率）
+        // 不再使用指数退避，用户明确要求"3s 一次"快速轮询
+        LocalDateTime nextAt = LocalDateTime.now().plusSeconds(BASE_INTERVAL_SECONDS);
         payOrderService.setNextQueryTime(order.getId(), nextAt);
     }
 
