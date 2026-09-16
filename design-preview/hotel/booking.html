@@ -241,6 +241,15 @@
 <script src="assets/data.js"></script>
 <script src="assets/components.js"></script>
 <script>
+// 支持 URL hash 传入预订数据（演示模式）
+if (location.hash.length > 1) {
+  try {
+    const data = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+    if (data.cart) sessionStorage.setItem('hotel_cart', JSON.stringify(data.cart));
+    if (data.user) localStorage.setItem('hotel_user', JSON.stringify(data.user));
+    history.replaceState(null, '', location.pathname);
+  } catch (e) {}
+}
 mountCommon();
 
 const cart = getCart();
@@ -248,7 +257,7 @@ const hotel = getHotel(cart.hotelId);
 const room = getRoom(cart.hotelId, cart.roomId);
 
 if (!hotel || !room) {
-  document.body.innerHTML = '<p style="padding:4rem">订单信息不完整</p>';
+  document.body.innerHTML = '<p style="padding:4rem;text-align:center;">订单信息不完整。请从<a href="detail.html?id=h001">酒店详情</a>点击预订。</p>';
 }
 
 document.getElementById('hThumb').src = hotel.cover;

@@ -98,6 +98,14 @@
 <script src="assets/data.js"></script>
 <script src="assets/components.js"></script>
 <script>
+// 支持 URL hash 传入数据（演示模式）
+if (location.hash.length > 1) {
+  try {
+    const data = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+    if (data.user) localStorage.setItem('hotel_user', JSON.stringify(data.user));
+    history.replaceState(null, '', location.pathname);
+  } catch (e) {}
+}
 mountCommon('orders');
 
 let currentTab = 'all';

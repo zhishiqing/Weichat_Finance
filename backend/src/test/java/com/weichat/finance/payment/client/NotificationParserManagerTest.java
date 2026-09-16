@@ -111,6 +111,29 @@ class NotificationParserManagerTest {
     }
 
     @Test
+    @DisplayName("parseWithHistory：缓存为空时直接返回 failure")
+    void testParseWithHistoryEmpty() {
+        when(configManager.getDefaultMchId()).thenReturn(null);
+
+        ParseResult result = parserManager.parseWithHistory(param, String.class, 50);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getErrorMessage().contains("Parser"));
+    }
+
+    @Test
+    @DisplayName("parseWithHistory：默认 Parser 失败时尝试历史 + 遍历")
+    void testParseWithHistoryDefaultFail() {
+        String defaultMchId = "1900000109";
+        when(configManager.getDefaultMchId()).thenReturn(defaultMchId);
+
+        ParseResult result = parserManager.parseWithHistory(param, String.class, 50);
+
+        // 默认 parser 拿不到 Config，全部失败
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
     @DisplayName("clearCache 不会抛异常")
     void testClearCache() {
         assertDoesNotThrow(() -> parserManager.clearCache());

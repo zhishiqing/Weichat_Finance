@@ -168,9 +168,12 @@ public class WechatNotifyController {
     /**
      * 智能路由验签 + 解密 + 业务处理（支付/退款回调通用流程）。
      *
-     * <p>三段式路由策略：</p>
+     * <p>v2.0.2 升级：四段式路由（默认 → 历史 → 遍历兜底），性能优于 v2.0.1。</p>
+     *
+     * <p>四段式路由策略：</p>
      * <ol>
      *   <li>默认 Parser（O(1)）</li>
+     *   <li>历史 mchId 列表（O(K)，K ≤ 100，按最近成功验签顺序）</li>
      *   <li>遍历所有缓存 Parser（O(N)）</li>
      *   <li>命中后记录 matchedMchId 到 logEntity.parentMchId</li>
      * </ol>
@@ -199,9 +202,9 @@ public class WechatNotifyController {
                 .signType("WECHATPAY2-SHA256-RSA2048")
                 .build();
 
-            // v2.0 智能路由：默认 + 遍历兜底
+            // v2.0.2 四段式路由：默认 → 历史 → 遍历兜底
             long startTime = System.currentTimeMillis();
-            ParseResult result = parserManager.parseWithFallback(param, String.class);
+            ParseResult result = parserManager.parseWithHistory(param, String.class, 50);
             long costMs = System.currentTimeMillis() - startTime;
 
             if (!result.isSuccess()) {

@@ -1,0 +1,11 @@
+{
+  "mchId": "TEST_DIRECT_001",
+  "appId": "wx_test_app",
+  "merchantName": "测试直连商户",
+  "mode": "DIRECT",
+  "apiV3Key": "test_32_chars_api_v3_key_xxxxxxxxxx",
+  "certSerialNo": "TEST_CERT_SERIAL_001",
+  "certPrivateKeyPath": "certs/test_key.pem",
+  "notifyUrlBase": "http://localhost:8080/api",
+  "enabled": 1
+}

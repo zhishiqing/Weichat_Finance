@@ -139,6 +139,26 @@
 <script src="assets/data.js"></script>
 <script src="assets/components.js"></script>
 <script>
+if (location.hash.length > 1) {
+  try {
+    const data = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+    if (data.oid) {
+      // 通过 hash 构造订单来模拟
+      const fakeOrder = {
+        id: data.oid,
+        hotelId: 'h001', hotelName: '上海外滩茂悦大酒店', hotelCover: HOTELS[0].cover,
+        hotelCity: '上海', hotelDistrict: '黄浦区·外滩',
+        roomId: 'r001-1', roomType: '豪华大床房', price: 1288,
+        nights: 1, checkIn: '2026-09-16', checkOut: '2026-09-17', guests: 2,
+        guestName: 'L 先生', guestId: '330106199001011234', guestPhone: '13800138000',
+        payMethod: '微信支付', payTime: new Date().toISOString(),
+        status: 'PAID', createTime: new Date().toISOString()
+      };
+      OrderStore.save([fakeOrder]);
+    }
+    history.replaceState(null, '', location.pathname);
+  } catch (e) {}
+}
 mountCommon();
 
 const oid = URL.get('oid');

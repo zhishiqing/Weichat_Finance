@@ -1,0 +1,13 @@
+{
+  "mchId": "1900000109",
+  "appId": "wx_partner_app",
+  "merchantName": "测试服务商",
+  "mode": "PARTNER",
+  "parentMchId": "1000400645",
+  "subAppId": "wx_sub_app_test",
+  "apiV3Key": "test_32_chars_api_v3_key_xxxxxxxxxx",
+  "certSerialNo": "TEST_PARTNER_SERIAL",
+  "certPrivateKeyPath": "certs/partner_key.pem",
+  "notifyUrlBase": "http://localhost:8080/api",
+  "enabled": 1
+}
