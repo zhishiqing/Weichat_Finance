@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商户登录 · Weichat Finance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   设计 tokens（来自 Starbucks DESIGN.md）
+   ============================================ */
+:root {
+  /* 调色板 */
+  --starbucks-green: #006241;
+  --green-accent: #00754A;
+  --house-green: #1E3932;
+  --green-uplift: #2b5148;
+  --green-light: #d4e9e2;
+  --gold: #cba258;
+
+  --neutral-warm: #f2f0eb;     /* 页面背景 */
+  --ceramic: #edebe9;
+  --neutral-cool: #f9f9f9;
+  --white: #ffffff;
+
+  --text-black: rgba(0, 0, 0, 0.87);
+  --text-black-soft: rgba(0, 0, 0, 0.58);
+  --text-white: rgba(255, 255, 255, 1);
+  --text-white-soft: rgba(255, 255, 255, 0.70);
+
+  /* 阴影 */
+  --card-shadow: 0 0 0.5px rgba(0,0,0,0.14), 0 1px 1px rgba(0,0,0,0.24);
+  --nav-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 2px 2px rgba(0,0,0,0.06), 0 0 2px rgba(0,0,0,0.07);
+  --frap-shadow: 0 0 6px rgba(0,0,0,0.24), 0 8px 12px rgba(0,0,0,0.14);
+  --focus-shadow: 0 0 0 3px rgba(0, 117, 74, 0.2);
+
+  /* 间距 */
+  --space-1: 0.4rem;
+  --space-2: 0.8rem;
+  --space-3: 1.6rem;
+  --space-4: 2.4rem;
+  --space-5: 3.2rem;
+  --space-6: 4rem;
+  --space-7: 4.8rem;
+
+  /* 圆角 */
+  --card-radius: 12px;
+  --button-radius: 50px;
+
+  /* 字号 */
+  --font-size-h1: 24px;
+  --font-size-h2: 24px;
+  --font-size-body: 16px;
+  --font-size-small: 14px;
+  --font-size-micro: 13px;
+
+  /* 字间距 */
+  --tracking-tight: -0.01em;
+
+  /* 全局 */
+  font-size: 62.5%; /* 1rem = 10px */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.6rem;
+  line-height: 1.5;
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-black);
+  background-color: var(--neutral-warm);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================
+   全局导航（仿星巴克）
+   ============================================ */
+.global-nav {
+  height: 7.2rem;
+  background: var(--house-green);
+  box-shadow: var(--nav-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.brand-logo {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--starbucks-green);
+  font-size: 2rem;
+}
+
+.brand-text {
+  color: var(--text-white);
+  font-size: 1.7rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+}
+
+.brand-text-sub {
+  color: var(--text-white-soft);
+  font-size: 1.2rem;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.nav-link {
+  color: var(--text-white-soft);
+  font-size: 1.4rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--text-white);
+}
+
+.nav-cta {
+  background: var(--white);
+  color: var(--green-accent);
+  border: none;
+  border-radius: var(--button-radius);
+  padding: 0.7rem 1.6rem;
+  font-family: inherit;
+  font-size: 1.4rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-cta:hover {
+  background: var(--green-light);
+}
+
+/* ============================================
+   主区域（登录卡片）
+   ============================================ */
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-7) var(--space-3);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 44rem;
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--space-7) var(--space-6) var(--space-6);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: var(--space-5);
+}
+
+.login-title {
+  color: var(--starbucks-green);
+  font-size: 2.4rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.5;
+  margin-bottom: var(--space-2);
+}
+
+.login-subtitle {
+  color: var(--text-black-soft);
+  font-size: 1.4rem;
+  font-weight: 400;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* 浮动 label 表单 */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form-group {
+  position: relative;
+}
+
+.form-input {
+  width: 100%;
+  height: 5.6rem;
+  padding: 1.6rem 1.2rem 0.4rem;
+  font-family: inherit;
+  font-size: 1.6rem;
+  color: var(--text-black);
+  background: transparent;
+  border: 1px solid #d6dbde;
+  border-radius: 0.4rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  letter-spacing: var(--tracking-tight);
+}
+
+.form-input:hover {
+  border-color: var(--text-black-soft);
+}
+
+.form-input:focus {
+  border-color: var(--green-accent);
+  box-shadow: var(--focus-shadow);
+}
+
+.form-label {
+  position: absolute;
+  left: 1.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-black-soft);
+  font-size: 1.6rem;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  letter-spacing: var(--tracking-tight);
+  background: var(--white);
+  padding: 0 0.4rem;
+}
+
+.form-input:focus + .form-label,
+.form-input:not(:placeholder-shown) + .form-label {
+  top: 0;
+  font-size: 1.2rem;
+  color: var(--green-accent);
+}
+
+/* 验证码区 */
+.captcha-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: stretch;
+}
+
+.captcha-input {
+  flex: 1;
+}
+
+.captcha-img {
+  width: 14rem;
+  height: 5.6rem;
+  border-radius: 0.4rem;
+  background: linear-gradient(135deg, var(--neutral-cool) 25%, var(--ceramic) 25%, var(--ceramic) 50%, var(--neutral-cool) 50%, var(--neutral-cool) 75%, var(--ceramic) 75%);
+  background-size: 8px 8px;
+  border: 1px solid #d6dbde;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', monospace;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--starbucks-green);
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s ease;
+}
+
+.captcha-img:hover {
+  transform: scale(1.02);
+}
+
+/* 记住我 + 忘记密码 */
+.form-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -0.4rem 0 0.4rem;
+  font-size: 1.4rem;
+}
+
+.checkbox-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--text-black);
+  cursor: pointer;
+  user-select: none;
+}
+
+.form-checkbox {
+  width: 1.8rem;
+  height: 1.8rem;
+  accent-color: var(--green-accent);
+  cursor: pointer;
+}
+
+.forgot-link {
+  color: var(--green-accent);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.forgot-link:hover {
+  color: var(--starbucks-green);
+  text-decoration: underline;
+}
+
+/* 主按钮 */
+.btn-primary {
+  width: 100%;
+  height: 5.6rem;
+  background: var(--green-accent);
+  color: var(--white);
+  border: 1px solid var(--green-accent);
+  border-radius: var(--button-radius);
+  font-family: inherit;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: var(--space-2);
+}
+
+.btn-primary:hover {
+  background: var(--starbucks-green);
+  border-color: var(--starbucks-green);
+}
+
+.btn-primary:active {
+  transform: scale(0.95);
+}
+
+/* 分隔线 */
+.divider {
+  display: flex;
+  align-items: center;
+  margin: var(--space-5) 0;
+  color: var(--text-black-soft);
+  font-size: 1.3rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ceramic);
+}
+
+.divider-text {
+  padding: 0 var(--space-3);
+}
+
+/* 二维码登录按钮（白底绿色文字 outlined） */
+.btn-outline {
+  width: 100%;
+  height: 5.6rem;
+  background: transparent;
+  color: var(--green-accent);
+  border: 1px solid var(--green-accent);
+  border-radius: var(--button-radius);
+  font-family: inherit;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background: var(--green-light);
+}
+
+.btn-outline:active {
+  transform: scale(0.95);
+}
+
+.btn-outline svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* 错误信息 */
+.error-msg {
+  background: rgba(200, 32, 20, 0.05);
+  border: 1px solid var(--gold);
+  border-radius: 0.4rem;
+  padding: var(--space-2) var(--space-3);
+  color: #c82014;
+  font-size: 1.3rem;
+  margin-bottom: var(--space-3);
+  display: none;
+}
+
+.error-msg.visible {
+  display: block;
+}
+
+/* ============================================
+   Footer（深绿色）
+   ============================================ */
+.footer {
+  background: var(--house-green);
+  color: var(--text-white-soft);
+  padding: var(--space-5) var(--space-6);
+  font-size: 1.2rem;
+  letter-spacing: var(--tracking-tight);
+}
+
+.footer-content {
+  max-width: 144rem;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-white);
+  font-weight: 600;
+}
+
+.footer-links {
+  display: flex;
+  gap: var(--space-5);
+}
+
+.footer-links a {
+  color: var(--text-white-soft);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: var(--text-white);
+}
+
+/* ============================================
+   响应式
+   ============================================ */
+@media (max-width: 768px) {
+  .global-nav {
+    padding: 0 var(--space-3);
+    height: 6.4rem;
+  }
+
+  .nav-links {
+    gap: var(--space-3);
+  }
+
+  .nav-link {
+    display: none;
+  }
+
+  .brand-text-sub {
+    display: none;
+  }
+
+  .login-card {
+    padding: var(--space-5) var(--space-3);
+  }
+
+  .login-title {
+    font-size: 2rem;
+  }
+
+  .captcha-row {
+    flex-direction: column;
+  }
+
+  .captcha-img {
+    width: 100%;
+  }
+
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================
+     全局导航
+     ============================================ -->
+<nav class="global-nav">
+  <div class="brand">
+    <div class="brand-logo">W</div>
+    <div>
+      <div class="brand-text">Weichat Finance</div>
+      <div class="brand-text-sub">微信支付商户管理平台</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#" class="nav-link">控制台</a>
+    <a href="#" class="nav-link">订单管理</a>
+    <a href="#" class="nav-link">退款记录</a>
+    <a href="#" class="nav-link">对账中心</a>
+    <button class="nav-cta">关于</button>
+  </div>
+</nav>
+
+<!-- ============================================
+     登录卡片
+     ============================================ -->
+<main class="main">
+  <div class="login-card">
+
+    <div class="login-header">
+      <h1 class="login-title">欢迎回来</h1>
+      <p class="login-subtitle">登录商户后台，开始管理您的微信支付业务</p>
+    </div>
+
+    <div class="error-msg" id="errorMsg">
+      商户号或密码错误，请重试
+    </div>
+
+    <form class="form" onsubmit="handleLogin(event)">
+
+      <div class="form-group">
+        <input type="text" class="form-input" id="mchId" placeholder=" " required>
+        <label for="mchId" class="form-label">商户号</label>
+      </div>
+
+      <div class="form-group">
+        <input type="password" class="form-input" id="password" placeholder=" " required>
+        <label for="password" class="form-label">登录密码</label>
+      </div>
+
+      <div class="captcha-row">
+        <div class="form-group captcha-input">
+          <input type="text" class="form-input" id="captcha" placeholder=" " required maxlength="4">
+          <label for="captcha" class="form-label">图形验证码</label>
+        </div>
+        <div class="captcha-img" onclick="refreshCaptcha(this)">A8K9</div>
+      </div>
+
+      <div class="form-meta">
+        <label class="checkbox-wrap">
+          <input type="checkbox" class="form-checkbox" checked>
+          7 天内自动登录
+        </label>
+        <a href="#" class="forgot-link">忘记密码？</a>
+      </div>
+
+      <button type="submit" class="btn-primary">登 录</button>
+
+      <div class="divider">
+        <span class="divider-text">其他登录方式</span>
+      </div>
+
+      <button type="button" class="btn-outline" onclick="alert('扫码登录功能开发中')">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zm8-2v8h8V3h-8zm6 6h-4V5h4v4zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm13-2h-2v2h2v-2zm-2 2h-2v2h2v-2zm2 2h-2v2h2v-2zm2-2h-2v2h2v-2zm2-2h-2v2h2v-2zm-2-2h-2v2h2v-2zm-2-2h-2v2h2v-2zm-2 2h-2v2h2v-2z"/>
+        </svg>
+        微信扫码登录
+      </button>
+    </form>
+  </div>
+</main>
+
+<!-- ============================================
+     Footer
+     ============================================ -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-brand">
+      <div class="brand-logo" style="width:3rem;height:3rem;font-size:1.4rem;">W</div>
+      Weichat Finance
+    </div>
+    <div class="footer-links">
+      <a href="#">帮助中心</a>
+      <a href="#">服务协议</a>
+      <a href="#">隐私政策</a>
+      <a href="#">联系客服 400-100-1674</a>
+    </div>
+    <div>© 2026 Weichat Finance · v1.5.1</div>
+  </div>
+</footer>
+
+<script>
+function handleLogin(e) {
+  e.preventDefault();
+  const mchId = document.getElementById('mchId').value;
+  const password = document.getElementById('password').value;
+  const captcha = document.getElementById('captcha').value;
+
+  // 模拟登录验证（实际项目中调 /api/v1/auth/login）
+  if (mchId !== '1674723182' || password !== 'demo123') {
+    document.getElementById('errorMsg').classList.add('visible');
+    refreshCaptcha();
+    return;
+  }
+
+  // 成功 → 跳转（实际项目跳 /dashboard）
+  alert('✅ 登录成功！\n\n商户号：' + mchId + '\n即将跳转控制台...');
+}
+
+function refreshCaptcha(el) {
+  if (!el) el = document.querySelector('.captcha-img');
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  el.textContent = code;
+}
+</script>
+
+</body>
+</html>

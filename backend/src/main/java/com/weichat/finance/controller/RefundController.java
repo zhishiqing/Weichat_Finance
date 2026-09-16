@@ -85,6 +85,14 @@ public class RefundController {
             return R.fail(404, "原商户订单号不存在");
         }
 
+        // v1.5.2 退款前置校验：原订单必须是已支付状态
+        // 微信拒绝未支付订单退款，提前拦截给前端清晰错误
+        if (!OrderStatus.SUCCESS.equals(order.getStatus())) {
+            log.warn("原订单未支付，无法退款: outTradeNo={}, status={}",
+                request.getOutTradeNo(), order.getStatus());
+            return R.fail(400, "原订单未支付，无法退款（当前状态=" + order.getStatus() + "）");
+        }
+
         // 🔴 致命修复：金额字段以后端为准。前端传值仅作引导。
         // 覆盖前端传入的 amountRefund/amountTotal，防止恶意覆盖
         request.setAmountTotal(order.getAmountTotal());

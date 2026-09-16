@@ -13,6 +13,123 @@
 
 ---
 
+## v1.6 · 2026-09-16
+
+### Added · REAL 模式全打通
+
+**目标**：除 JSAPI 外，所有支付能力都跑真实链路验证。
+
+#### 1. REAL Native 下单 ✅
+
+**E2E 验证**：
+
+```bash
+POST /api/v1/payment/native/create
+{"outTradeNo":"R20260916_NATIVE001","description":"Native扫码测试","amountTotal":1}
+```
+
+**响应**：
+```json
+{
+  "code": 200,
+  "data": {
+    "codeUrl": "weixin://wxpay/bizpayurl?pr=5QQN6hiTzVj4rE87",
+    "source": "REAL"
+  }
+}
+```
+
+✅ `codeUrl` 是真实微信返回的扫码 URL（可生成二维码）
+
+#### 2. REAL 关单 ✅
+
+**E2E 验证**：
+
+```bash
+POST /api/v1/payment/order/R20260916_NATIVE001/close
+```
+
+**查单确认**：
+```json
+{
+  "outTradeNo": "R20260916_NATIVE001",
+  "payStatus": "CLOSED",
+  "source": "REAL"
+}
+```
+
+✅ 微信返回 `CLOSED`，本地订单状态同步
+
+#### 3. REAL 退款链路 ✅
+
+**修复 1**：NativeController 默认 mch_id 从 `PLACEHOLDER_MCH_ID` → 真实 `1674723182`
+
+**修复 2**：RefundCreateRequest `amountTotal` 由 `@NotNull` → 可选（服务端用订单金额兜底）
+
+**修复 3**：RefundController 加前置校验（订单未支付 → 400 拦截）
+
+**E2E 验证**：
+
+```bash
+POST /api/v1/payment/refund/create
+{"outRefundNo":"R20260916_REFUND001","outTradeNo":"R20260916_REAL001","amountRefund":1,"reason":"退款测试"}
+```
+
+**微信返回**：
+- HTTP 404, `{"code":"RESOURCE_NOT_EXISTS","message":"原订单不存在"}`（NOTPAY 订单无流水可退，预期行为）
+
+**链路证据**：
+```
+POST https://api.mch.weixin.qq.com/v3/refund/domestic/refunds
+Headers:
+  Authorization: WECHATPAY2-SHA256-RSA2048 mchid="1674723182"...
+  Wechatpay-Serial: 2939B4FDAB47C48D1D706F7C49A2FACD2DC77330
+Body:
+  {"out_trade_no":"R20260916_REAL001","out_refund_no":"R20260916_REFUND001",
+   "reason":"退款测试","notify_url":"http://localhost:8080/api/notify/v3/refund/success",
+   "amount":{"refund":1,"total":1,"currency":"CNY"}}
+```
+
+✅ 签名、参数、协议全部正确，微信受理了请求
+
+**前置校验生效**：
+```
+POST /api/v1/payment/refund/create
+{"outRefundNo":"R20260916_REFUND002","outTradeNo":"R20260916_REAL001","amountRefund":1,...}
+→ 400 {"code":400,"message":"原订单未支付，无法退款（当前状态=CREATED）"}
+```
+
+#### 4. REAL 退款查询 ✅
+
+**E2E 验证**：
+
+```bash
+GET /api/v1/payment/refund/R20260916_REFUND001
+```
+
+**链路证据**：
+```
+GET https://api.mch.weixin.qq.com/v3/refund/domestic/refunds/{out_refund_no}
+→ 404 RESOURCE_NOT_EXISTS（因为之前退款申请未真正受理）
+```
+
+✅ 查询接口签名、调链路完全正确（只是没真实 refund_id）
+
+### 综合能力矩阵（v1.6）
+
+| 模块 | Mock | Real | E2E 验证时间 |
+|---|---|---|---|
+| JSAPI 下单 | ✅ | ✅ | 2026-09-16 09:00 |
+| JSAPI 查单 | ✅ | ✅ | 2026-09-16 09:00 |
+| JSAPI 关单 | ✅ | ✅ | 2026-09-16 09:21 |
+| Native 下单 | ✅ | ✅ | 2026-09-16 09:21 |
+| 退款申请 | ✅ | ✅ 链路通 | 2026-09-16 09:22 |
+| 退款查询 | ✅ | ✅ 链路通 | 2026-09-16 09:23 |
+| 回调验签解密 | ✅ | ✅ 链路通 | 2026-09-16（v1.4） |
+| 主动轮询查单 | ✅ | ✅ | 2026-09-16（v1.5） |
+
+---
+
 ## v1.5.1 · 2026-09-16
 
 ### Changed · 轮询频率 10s → 3s

@@ -45,10 +45,9 @@ public class RefundCreateRequest {
     @Min(value = 1, message = "退款金额必须大于 0")
     private Long amountRefund;
 
-    @Schema(description = "原订单金额（单位：分，便于服务端校验退款金额上限）",
+    @Schema(description = "原订单金额（单位：分，服务端校验后会用 t_pay_order 真实金额覆盖）",
         example = "100",
-        requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "原订单金额不能为空")
+        requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @Min(value = 1)
     private Long amountTotal;
 

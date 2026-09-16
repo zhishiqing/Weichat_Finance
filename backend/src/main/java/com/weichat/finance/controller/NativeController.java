@@ -34,7 +34,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class NativeController {
 
     private static final Logger log = LoggerFactory.getLogger(NativeController.class);
-    private static final String DEFAULT_MCH_ID = "PLACEHOLDER_MCH_ID";
+    // v1.5.2：使用真实商户号（解决"未配置默认商户"问题）
+    private static final String DEFAULT_MCH_ID = "1674723182";
 
     private final NativeService nativeService;
     private final MerchantConfigService merchantConfigService;
